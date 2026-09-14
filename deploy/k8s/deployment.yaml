@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: civiclens-api
+  namespace: civiclens
+  labels:
+    app: civiclens-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: civiclens-api
+  template:
+    metadata:
+      labels:
+        app: civiclens-api
+    spec:
+      serviceAccountName: civiclens-ksa
+      containers:
+        - name: api
+          image: europe-west1-docker.pkg.dev/wh-djvagl/civiclens-repo/civiclens-api:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+              name: http
+          env:
+            - name: DB_HOST
+              value: "10.238.0.2" # IP privée de Cloud SQL PostgreSQL 16 (wh-djvagl-pg-instance)
+            - name: DB_NAME
+              value: "wh-djvagl-db"
+            - name: DB_USER
+              value: "wh-djvagl-gke-app-sa@wh-djvagl.iam" # Identité IAM native Cloud SQL
+            - name: GCP_PROJECT
+              value: "wh-djvagl"
+            - name: GCP_LOCATION
+              value: "europe-west1"
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10

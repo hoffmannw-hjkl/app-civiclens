@@ -1,0 +1,9 @@
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: civiclens-demo-cert
+  namespace: civiclens
+spec:
+  domains:
+    - "civiclens.hoffmannw.demo.altostrat.com"
+

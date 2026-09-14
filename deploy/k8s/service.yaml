@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: civiclens-service
+  namespace: civiclens
+  annotations:
+    # Association du BackendConfig IAP au port http du service
+    beta.cloud.google.com/backend-config: '{"ports": {"http": "civiclens-backend-config"}}'
+    cloud.google.com/backend-config: '{"ports": {"http": "civiclens-backend-config"}}'
+    # Activer le routage direct vers les Pods GKE (Network Endpoint Groups - NEG)
+    cloud.google.com/neg: '{"ingress": true}'
+spec:
+  type: ClusterIP
+  selector:
+    app: civiclens-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000
+      protocol: TCP

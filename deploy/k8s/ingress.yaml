@@ -1,0 +1,35 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: civiclens-ingress
+  namespace: civiclens
+  annotations:
+    # Utilisation du Google Cloud External HTTP(S) Load Balancer
+    kubernetes.io/ingress.class: "gce"
+    # Attachement du certificat SSL géré par Google et du certificat d'amorçage
+    networking.gke.io/managed-certificates: "civiclens-demo-cert"
+    ingress.gcp.kubernetes.io/pre-shared-cert: "civiclens-bootstrap-cert"
+    # Activer HTTP temporairement le temps de la validation TLS
+    kubernetes.io/ingress.allow-http: "true"
+spec:
+  rules:
+    - host: "civiclens.hoffmannw.demo.altostrat.com"
+      http:
+        paths:
+          - path: /*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: civiclens-service
+                port:
+                  name: http
+    - host: "civiclens.altostrat.com"
+      http:
+        paths:
+          - path: /*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: civiclens-service
+                port:
+                  name: http

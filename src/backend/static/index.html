@@ -1,0 +1,1840 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CivicLens - Transparence Municipale & Open Data</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              500: '#0284c7',
+              600: '#0369a1',
+              700: '#075985',
+              900: '#0c4a6e',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .glass {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans antialiased selection:bg-sky-500 selection:text-white">
+
+  <!-- En-tête Navigation -->
+  <header class="sticky top-0 z-40 glass border-b border-slate-200/80 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-sky-500/20 font-bold text-lg">
+          CL
+        </div>
+        <div>
+          <span class="text-xl font-bold tracking-tight bg-gradient-to-r from-slate-900 via-sky-900 to-indigo-950 bg-clip-text text-transparent">CivicLens</span>
+          <span class="hidden sm:inline-block ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-200">Observatoire Comptes Publics & IA Financière</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <div id="userInfo" class="hidden sm:flex items-center gap-2 text-xs font-medium text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="userEmail">Chargement...</span>
+        </div>
+        <a href="/docs" target="_blank" class="text-xs font-semibold text-sky-600 hover:text-sky-700 flex items-center gap-1 hover:underline">
+          Documentation API (Swagger)
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Contenu Principal -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    
+    <!-- Hero Banner -->
+    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-sky-950 to-indigo-950 text-white p-8 sm:p-10 shadow-xl shadow-slate-900/10">
+      <div class="absolute -right-16 -bottom-16 w-80 h-80 bg-sky-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="relative z-10 max-w-3xl">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-sky-300 text-xs font-medium mb-4 backdrop-blur-md">
+          <span>🏛️ Observatoire des Comptes Publics Locaux & Finances Territoriales</span>
+        </div>
+        <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight">
+          Analyse financière et trajectoire budgétaire des 35 000 communes
+        </h1>
+        <p class="mt-3 text-slate-300 text-sm sm:text-base leading-relaxed">
+          Accédez à l'historique officiel <strong>DGFiP & OFGL (2000-2025)</strong> : endettement, investissements, dépenses de fonctionnement et ratios par habitant décryptés par <strong>Vertex AI Gemini</strong>.
+        </p>
+      </div>
+    </div>
+
+    <!-- Onglets Principaux Plateforme -->
+    <div class="flex flex-wrap items-center gap-2 border-b border-slate-200/80 pb-2">
+      <button onclick="switchMainTab('communes')" id="tabBtnCommunes"
+              class="px-4 py-2.5 rounded-xl font-bold text-sm bg-sky-600 text-white shadow-sm flex items-center gap-2 transition cursor-pointer">
+        <span>🏛️</span> Observatoire des Communes
+      </button>
+      <button onclick="switchMainTab('benchmark')" id="tabBtnBenchmark"
+              class="px-4 py-2.5 rounded-xl font-bold text-sm bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 shadow-2xs flex items-center gap-2 transition cursor-pointer">
+        <span>⚖️</span> Benchmark Territorial
+        <span class="px-2 py-0.5 text-[10px] rounded-full bg-indigo-100 text-indigo-800 font-semibold">Gemini</span>
+      </button>
+      <button onclick="switchMainTab('bigquery')" id="tabBtnBigQuery"
+              class="px-4 py-2.5 rounded-xl font-bold text-sm bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 shadow-2xs flex items-center gap-2 transition cursor-pointer">
+        <span>🔍</span> Data Lakehouse BigQuery
+        <span class="px-2 py-0.5 text-[10px] rounded-full bg-amber-100 text-amber-800 font-semibold">SQL IA</span>
+      </button>
+      <button onclick="switchMainTab('bercy')" id="tabBtnBercy"
+              class="px-4 py-2.5 rounded-xl font-bold text-sm bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 shadow-2xs flex items-center gap-2 transition cursor-pointer">
+        <span>💼</span> Jeux de Données de Bercy (650+)
+        <span class="px-2 py-0.5 text-[10px] rounded-full bg-emerald-100 text-emerald-800 font-semibold">DGFiP</span>
+      </button>
+    </div>
+
+    <!-- VUE 1 : Observatoire des Communes & Comptes Publics -->
+    <div id="viewCommunes" class="space-y-8">
+    <!-- Sélecteur de ville & Moteur de recherche de PDF -->
+    <section class="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-6">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <span>📍</span> Choisir une collectivité territoriale
+          </h2>
+          <p class="text-xs text-slate-500 mt-1">Sélectionnez une commune recommandée ou saisissez le nom de la ville de votre choix.</p>
+        </div>
+        
+        <!-- Prédéfinis rapides -->
+        <div class="flex flex-wrap items-center gap-2">
+          <div id="quickPills" class="flex flex-wrap gap-2">
+            <!-- Injecté dynamiquement -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Barre de contrôle de recherche de collectivité & Modèle IA -->
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+        <div class="md:col-span-6">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Commune ou Code INSEE</label>
+          <div class="relative">
+            <input type="text" id="cityInput" list="citiesList" placeholder="Ex: Bordeaux, Nantes, Paris, Lyon, Castelmaurou, Soissons..." 
+                   class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent text-sm bg-slate-50/50"
+                   value="Bordeaux" onkeydown="if(event.key==='Enter') loadCommuneFinances()">
+            <datalist id="citiesList"></datalist>
+            <span class="absolute right-3 top-2.5 text-slate-400">🏛️</span>
+          </div>
+        </div>
+
+        <div class="md:col-span-4">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Modèle d'Audit Vertex AI</label>
+          <select id="modelSelect" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 text-sm bg-slate-50/50 font-medium text-slate-700">
+            <option value="gemini-3.6-flash" selected>⚡ Gemini 3.6 Flash (Haute Vitesse & Raisonnement)</option>
+            <option value="gemini-2.5-pro">🌟 Gemini 2.5 Pro (Audit Approfondi)</option>
+            <option value="gemini-2.5-flash">🚀 Gemini 2.5 Flash (Souverain europe-west1)</option>
+          </select>
+        </div>
+
+        <div class="md:col-span-2 flex items-end">
+          <button id="btnFinances" onclick="loadCommuneFinances()" 
+                  class="w-full py-2.5 px-4 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-xl transition shadow-md shadow-sky-600/20 text-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                  title="Charger les comptes certifiés DGFiP / OFGL">
+            <span>📊</span> Consulter
+          </button>
+        </div>
+      </div>
+
+      <!-- Section Observatoire des Comptes Publics Locaux (DGFiP / OFGL) -->
+      <div id="financeSection" class="mt-6 pt-6 border-t border-slate-100">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 text-[11px] font-bold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">DGFiP & OFGL Certifié</span>
+              <h3 class="text-base font-bold text-slate-900" id="financeCityTitle">Observatoire Financier : Commune de Bordeaux</h3>
+            </div>
+            <p class="text-xs text-slate-500 mt-1" id="financeCitySubtitle">Historique pluriannuel certifié (M14/M57) et ratios d'endettement par habitant.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="launchFinancialAudit()" id="btnAuditIA"
+                    class="px-3.5 py-1.5 bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-700 hover:to-sky-700 text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-md shadow-indigo-600/20 cursor-pointer">
+              <span>✨</span> Audit Gemini
+            </button>
+            <button onclick="downloadAuditPdf()" id="btnDownloadPdf"
+                    class="px-3.5 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-2xs hover:text-sky-600 transition cursor-pointer"
+                    title="Télécharger le rapport d'audit officiel M57 en PDF">
+              <span>📄</span> Télécharger PDF (M57)
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 KPI Cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5 mb-6">
+          <div class="bg-slate-50/80 border border-slate-200/80 rounded-xl p-3.5">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">Dépenses de Gestion</span>
+            <span class="text-lg font-extrabold text-slate-900 mt-0.5 block" id="kpiFonctionnement">-- M€</span>
+            <span class="text-[11px] text-slate-500 mt-0.5 block" id="kpiFonctionnementHab">-- € / habitant</span>
+          </div>
+          <div class="bg-slate-50/80 border border-slate-200/80 rounded-xl p-3.5">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">Dépenses d'Équipement</span>
+            <span class="text-lg font-extrabold text-sky-700 mt-0.5 block" id="kpiEquipement">-- M€</span>
+            <span class="text-[11px] text-slate-500 mt-0.5 block" id="kpiEquipementHab">-- € / habitant</span>
+          </div>
+          <div class="bg-slate-50/80 border border-slate-200/80 rounded-xl p-3.5">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">Encours de Dette</span>
+            <span class="text-lg font-extrabold text-rose-600 mt-0.5 block" id="kpiDette">-- M€</span>
+            <span class="text-[11px] text-slate-500 mt-0.5 block" id="kpiDetteHab">-- € / habitant</span>
+          </div>
+          <div class="bg-slate-50/80 border border-slate-200/80 rounded-xl p-3.5">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">Désendettement</span>
+            <span class="text-lg font-extrabold text-emerald-600 mt-0.5 block" id="kpiDesendettement">-- ans</span>
+            <span class="text-[11px] text-slate-500 mt-0.5 block" id="kpiEpargneBrute">Épargne brute: -- M€</span>
+          </div>
+        </div>
+
+        <!-- Graphiques Interactifs Chart.js -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+          <div class="bg-white border border-slate-200/80 rounded-xl p-4 shadow-2xs">
+            <h4 class="text-xs font-bold text-slate-700 mb-3 flex items-center justify-between">
+              <span>📈 Trajectoire de l'Endettement & Fonctionnement (M€)</span>
+              <span class="text-[10px] text-slate-400 font-mono">2018-2025</span>
+            </h4>
+            <div class="h-56 relative">
+              <canvas id="chartFinanceAmounts"></canvas>
+            </div>
+          </div>
+          <div class="bg-white border border-slate-200/80 rounded-xl p-4 shadow-2xs">
+            <h4 class="text-xs font-bold text-slate-700 mb-3 flex items-center justify-between">
+              <span>👤 Ratios par Habitant (€ / hab)</span>
+              <span class="text-[10px] text-slate-400 font-mono">Dette vs Investissement</span>
+            </h4>
+            <div class="h-56 relative">
+              <canvas id="chartFinancePerHab"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panneau Rapport d'Audit Gemini -->
+        <div id="auditReportPanel" class="hidden bg-gradient-to-br from-indigo-50/70 via-sky-50/50 to-white border border-indigo-200/70 rounded-2xl p-5 sm:p-6 mb-4 shadow-xs">
+          <div class="flex items-center justify-between pb-3 mb-3 border-b border-indigo-100">
+            <div class="flex items-center gap-2">
+              <span class="text-lg">⚖️</span>
+              <h4 class="text-sm font-bold text-indigo-950">Audit de Trajectoire Budgétaire - Inférence Vertex AI Gemini</h4>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800" id="auditModelUsed">Gemini 2.5 Flash</span>
+              <button onclick="downloadAuditPdf()" class="text-xs font-medium text-sky-700 hover:text-sky-900 bg-white/80 border border-indigo-200 px-2.5 py-1 rounded-lg flex items-center gap-1 transition">
+                <span>📥</span> Télécharger en PDF
+              </button>
+            </div>
+          </div>
+          <div id="auditReportContent" class="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line font-normal space-y-2">
+            <!-- Injecté par Gemini -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Zone RAG & Analyse IA Instantanée -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      <!-- Assistant Citoyen & Décryptage Financier RAG -->
+      <div class="lg:col-span-12 bg-white rounded-2xl p-6 sm:p-7 border border-slate-200/80 shadow-xs flex flex-col h-[520px]">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              <span>💬</span> Assistant IA - Audit Budgétaire & Comptes Publics
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">Posez vos questions sur la dette, les investissements, l'épargne brute ou la fiscalité des communes.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+              Vertex AI Gemini 2.5
+            </span>
+            <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+              DGFiP & OFGL
+            </span>
+          </div>
+        </div>
+
+        <!-- Zone de messages chat -->
+        <div id="chatMessages" class="flex-1 overflow-y-auto py-4 space-y-3 pr-2 text-sm">
+          <div class="flex gap-3 items-start">
+            <div class="w-8 h-8 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-xs shrink-0">CL</div>
+            <div class="bg-slate-50 rounded-2xl rounded-tl-none p-3.5 text-slate-700 border border-slate-100 max-w-[85%]">
+              Bonjour ! Je réponds à vos questions sur les comptes administratifs et la trajectoire financière de votre commune. Essayez par exemple :
+              <ul class="mt-2 space-y-1 text-xs text-sky-600 list-disc list-inside">
+                <li><button onclick="setQuery('Quel est l\'encours total de la dette et le délai de désendettement ?')" class="hover:underline text-left">Quel est l'encours de dette et le délai de désendettement ?</button></li>
+                <li><button onclick="setQuery('Comment ont évolué les dépenses réelles d\'investissement sur les 5 dernières années ?')" class="hover:underline text-left">Comment ont évolué les investissements ?</button></li>
+                <li><button onclick="setQuery('Quelle est la capacité d\'autofinancement (épargne brute) par rapport aux dépenses de fonctionnement ?')" class="hover:underline text-left">Quelle est la capacité d'autofinancement (épargne brute) ?</button></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Saisie Chat -->
+        <div class="pt-3 border-t border-slate-100">
+          <form id="chatForm" onsubmit="sendChatMessage(event)" class="flex gap-2">
+            <input type="text" id="chatInput" placeholder="Posez une question financière sur votre ville (dette, investissements, épargne, ratios par habitant)..." 
+                   class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent text-sm bg-slate-50/50">
+            <button type="submit" id="chatBtn"
+                    class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl transition text-sm flex items-center gap-1.5 cursor-pointer">
+              <span>Envoyer</span>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </button>
+          </form>
+        </div>
+      </div>
+
+    </section>
+    </div> <!-- Fin viewCommunes -->
+
+    <!-- VUE 2 : Benchmark & Comparateur Territorial Intelligent -->
+    <div id="viewBenchmark" class="hidden space-y-6">
+      <section class="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200">Arbitrage M57 & Ratios d'Efficience</span>
+              <h2 class="text-lg font-bold text-slate-900">Benchmark & Comparateur Budgétaire Intelligent</h2>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">Confrontez deux collectivités sur leurs agrégats réels (DGFiP/OFGL) et obtenez un arbitrage objectif généré par Vertex AI Gemini.</p>
+          </div>
+          <div class="flex items-center gap-2 text-xs font-medium text-slate-500">
+            <span>Réf : Nomenclature M57 & Ratios / hab</span>
+          </div>
+        </div>
+
+        <!-- Sélecteur des 2 communes à comparer -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <div class="md:col-span-5">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-sky-700 mb-1.5">Collectivité A (Référence)</label>
+            <div class="relative">
+              <input type="text" id="benchCityA" placeholder="Ex: Bordeaux, Pantin, Lyon..." 
+                     class="w-full px-4 py-2.5 rounded-xl border border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-500 text-sm bg-sky-50/30 font-medium"
+                     value="Bordeaux">
+              <span class="absolute right-3 top-2.5 text-sky-500">🏛️</span>
+            </div>
+          </div>
+
+          <div class="md:col-span-2 flex items-center justify-center pt-5">
+            <span class="w-9 h-9 rounded-full bg-slate-100 border border-slate-300 text-slate-600 font-extrabold text-xs flex items-center justify-center shadow-xs">VS</span>
+          </div>
+
+          <div class="md:col-span-5">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-indigo-700 mb-1.5">Collectivité B (Comparaison)</label>
+            <div class="relative">
+              <input type="text" id="benchCityB" placeholder="Ex: Nantes, Montreuil, Marseille..." 
+                     class="w-full px-4 py-2.5 rounded-xl border border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm bg-indigo-50/30 font-medium"
+                     value="Nantes">
+              <span class="absolute right-3 top-2.5 text-indigo-500">🏛️</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Duels suggérés -->
+        <div class="flex flex-wrap items-center gap-2 pt-1">
+          <span class="text-xs font-medium text-slate-400 mr-1">Exemples rapides :</span>
+          <button onclick="setBenchmarkPair('Bordeaux', 'Nantes')" class="px-2.5 py-1 text-xs bg-slate-100 hover:bg-sky-50 hover:text-sky-700 rounded-lg text-slate-700 font-medium transition cursor-pointer">Bordeaux vs Nantes</button>
+          <button onclick="setBenchmarkPair('Pantin', 'Montreuil')" class="px-2.5 py-1 text-xs bg-slate-100 hover:bg-sky-50 hover:text-sky-700 rounded-lg text-slate-700 font-medium transition cursor-pointer">Pantin vs Montreuil (93)</button>
+          <button onclick="setBenchmarkPair('Lyon', 'Marseille')" class="px-2.5 py-1 text-xs bg-slate-100 hover:bg-sky-50 hover:text-sky-700 rounded-lg text-slate-700 font-medium transition cursor-pointer">Lyon vs Marseille</button>
+        <!-- Personnalisation des Prompts par Partie (4 Volets M57) -->
+        <details id="benchmarkPromptsDetails" class="group bg-slate-50 border border-indigo-200/90 rounded-2xl overflow-hidden shadow-2xs transition-all duration-200">
+          <summary class="flex items-center justify-between p-4 cursor-pointer select-none hover:bg-indigo-50/50 transition bg-white/70">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-base">🎛️</span>
+              <span class="text-xs sm:text-sm font-bold text-slate-800">Personnaliser les Prompts de l'Arbitrage IA (4 Volets M57)</span>
+              <span id="promptsStatusBadge" class="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">4 volets par défaut</span>
+            </div>
+            <div class="flex items-center gap-2 text-xs text-slate-500">
+              <span class="text-[11px] font-medium text-indigo-600 group-open:hidden flex items-center gap-1">Afficher les consignes ▾</span>
+              <span class="text-[11px] font-medium text-indigo-600 hidden group-open:flex items-center gap-1">Masquer ▴</span>
+            </div>
+          </summary>
+
+          <div class="p-4 pt-3 border-t border-indigo-100 bg-slate-50/50 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-600 pb-1">
+              <p>Chaque volet dispose d'un prompt d'analyse de référence. <strong>Modifiez les consignes ci-dessous</strong> pour orienter le raisonnement de <strong>Vertex AI Gemini 3.6</strong> selon vos priorités (ex: insister sur la masse salariale, les transitions écologiques ou le désendettement) :</p>
+              <button type="button" onclick="resetAllBenchmarkPrompts()" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs flex items-center gap-1 shrink-0 transition cursor-pointer">
+                <span>🔄</span> Rétablir tous les prompts
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <!-- Volet 1 -->
+              <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs space-y-2 flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between gap-2 mb-1.5">
+                    <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <span class="w-5 h-5 rounded-full bg-sky-100 text-sky-800 font-extrabold text-[10px] flex items-center justify-center">1</span>
+                      Gestion Courante & Charges
+                    </span>
+                    <span class="text-[10px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">Recettes vs Dépenses</span>
+                  </div>
+                  <textarea id="promptPart1" rows="3" oninput="checkPromptsModified()"
+                    class="w-full text-xs text-slate-700 bg-slate-50/60 p-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white resize-y font-normal leading-relaxed"></textarea>
+                </div>
+                <div class="flex items-center justify-between pt-1 border-t border-slate-100 text-[11px]">
+                  <span id="charCountPart1" class="text-slate-400">0 car.</span>
+                  <button type="button" onclick="resetBenchmarkPrompt('part_1')" class="text-slate-500 hover:text-indigo-600 transition font-medium flex items-center gap-1 cursor-pointer">
+                    ↺ Réinitialiser
+                  </button>
+                </div>
+              </div>
+
+              <!-- Volet 2 -->
+              <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs space-y-2 flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between gap-2 mb-1.5">
+                    <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <span class="w-5 h-5 rounded-full bg-indigo-100 text-indigo-800 font-extrabold text-[10px] flex items-center justify-center">2</span>
+                      CAF & Investissement
+                    </span>
+                    <span class="text-[10px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">Épargne brute & Équipement</span>
+                  </div>
+                  <textarea id="promptPart2" rows="3" oninput="checkPromptsModified()"
+                    class="w-full text-xs text-slate-700 bg-slate-50/60 p-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white resize-y font-normal leading-relaxed"></textarea>
+                </div>
+                <div class="flex items-center justify-between pt-1 border-t border-slate-100 text-[11px]">
+                  <span id="charCountPart2" class="text-slate-400">0 car.</span>
+                  <button type="button" onclick="resetBenchmarkPrompt('part_2')" class="text-slate-500 hover:text-indigo-600 transition font-medium flex items-center gap-1 cursor-pointer">
+                    ↺ Réinitialiser
+                  </button>
+                </div>
+              </div>
+
+              <!-- Volet 3 -->
+              <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs space-y-2 flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between gap-2 mb-1.5">
+                    <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <span class="w-5 h-5 rounded-full bg-rose-100 text-rose-800 font-extrabold text-[10px] flex items-center justify-center">3</span>
+                      Dette & Solvabilité
+                    </span>
+                    <span class="text-[10px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">Encours / hab & Années</span>
+                  </div>
+                  <textarea id="promptPart3" rows="3" oninput="checkPromptsModified()"
+                    class="w-full text-xs text-slate-700 bg-slate-50/60 p-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white resize-y font-normal leading-relaxed"></textarea>
+                </div>
+                <div class="flex items-center justify-between pt-1 border-t border-slate-100 text-[11px]">
+                  <span id="charCountPart3" class="text-slate-400">0 car.</span>
+                  <button type="button" onclick="resetBenchmarkPrompt('part_3')" class="text-slate-500 hover:text-indigo-600 transition font-medium flex items-center gap-1 cursor-pointer">
+                    ↺ Réinitialiser
+                  </button>
+                </div>
+              </div>
+
+              <!-- Volet 4 -->
+              <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs space-y-2 flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between gap-2 mb-1.5">
+                    <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-[10px] flex items-center justify-center">4</span>
+                      Bilan & Arbitrage Final
+                    </span>
+                    <span class="text-[10px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">Synthèse & Notation</span>
+                  </div>
+                  <textarea id="promptPart4" rows="3" oninput="checkPromptsModified()"
+                    class="w-full text-xs text-slate-700 bg-slate-50/60 p-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white resize-y font-normal leading-relaxed"></textarea>
+                </div>
+                <div class="flex items-center justify-between pt-1 border-t border-slate-100 text-[11px]">
+                  <span id="charCountPart4" class="text-slate-400">0 car.</span>
+                  <button type="button" onclick="resetBenchmarkPrompt('part_4')" class="text-slate-500 hover:text-indigo-600 transition font-medium flex items-center gap-1 cursor-pointer">
+                    ↺ Réinitialiser
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <div class="flex justify-end pt-2">
+          <button onclick="runCommuneBenchmark()" id="btnRunBenchmark"
+                  class="py-2.5 px-6 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-md shadow-indigo-600/20 text-sm flex items-center gap-2 transition cursor-pointer">
+            <span>⚖️</span> Lancer le Benchmark Comparatif IA
+          </button>
+        </div>
+
+        <!-- Loading Benchmark -->
+        <div id="loadingBenchmark" class="hidden py-12 text-center space-y-3">
+          <div class="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p class="text-sm text-slate-600 font-medium">Chargement des comptes certifiés et arbitrage par Vertex AI Gemini 3.6...</p>
+        </div>
+
+        <!-- Résultats du Benchmark -->
+        <div id="benchmarkResults" class="hidden space-y-6 pt-4 border-t border-slate-100">
+          
+          <!-- Titre des 2 villes -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <h3 class="text-base font-extrabold text-slate-900" id="benchmarkTitle">Bordeaux vs Nantes</h3>
+            <span class="text-xs px-2.5 py-1 bg-indigo-50 text-indigo-800 rounded-full font-semibold border border-indigo-200" id="benchmarkSubtitle">Exercice 2024</span>
+          </div>
+
+          <!-- Tableau Comparatif Chiffré -->
+          <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-2xs">
+            <table class="w-full text-left text-xs sm:text-sm">
+              <thead class="bg-slate-900 text-white text-xs uppercase tracking-wider">
+                <tr>
+                  <th class="p-3">Agrégat Budgétaire (M57)</th>
+                  <th class="p-3 text-sky-400" id="benchColA">Commune A</th>
+                  <th class="p-3 text-indigo-400" id="benchColB">Commune B</th>
+                  <th class="p-3">Écart (€ / hab)</th>
+                  <th class="p-3">Écart Relatif</th>
+                </tr>
+              </thead>
+              <tbody id="benchmarkTableBody" class="divide-y divide-slate-200 bg-white">
+                <!-- Rempli en JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Graphique Chart.js Comparatif -->
+          <div class="bg-white border border-slate-200/80 rounded-xl p-4 shadow-2xs">
+            <h4 class="text-xs font-bold text-slate-700 mb-3 flex items-center justify-between">
+              <span>📊 Ratios Comparés par Habitant (€ / hab)</span>
+              <span class="text-[10px] text-slate-400">DGFiP / OFGL</span>
+            </h4>
+            <div class="h-64 relative">
+              <canvas id="chartBenchmark"></canvas>
+            </div>
+          </div>
+
+          <!-- Arbitrage Rédigé par Gemini -->
+          <div class="bg-gradient-to-br from-indigo-50/70 via-sky-50/50 to-white border border-indigo-200 rounded-2xl p-5 sm:p-6 shadow-xs space-y-3">
+            <div class="flex flex-wrap items-center justify-between border-b border-indigo-100 pb-3 gap-2">
+              <div class="flex items-center gap-2">
+                <span class="text-lg">✨</span>
+                <h4 class="text-sm font-bold text-indigo-950">Arbitrage Comparatif & Évaluation Stratégique (Vertex AI Gemini 3.6)</h4>
+              </div>
+              <div class="flex items-center gap-2">
+                <span id="benchmarkCustomBadge" class="hidden text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">🎯 Consignes personnalisées</span>
+                <span class="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800" id="benchmarkModelBadge">⚡ Gemini 3.6 Flash (Vertex AI)</span>
+              </div>
+            </div>
+            <div id="benchmarkSummaryText" class="text-xs sm:text-sm text-slate-700 leading-relaxed space-y-3 prose prose-indigo max-w-none">
+              <!-- Rempli par Gemini -->
+            </div>
+          </div>
+        </div>
+      </section>
+    </div> <!-- Fin viewBenchmark -->
+
+    <!-- VUE 3 : Data Lakehouse BigQuery (Text-to-SQL IA) -->
+    <div id="viewBigQuery" class="hidden space-y-6">
+      <section class="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-amber-100 text-amber-800 border border-amber-200">GoogleSQL & BigQuery Studio</span>
+              <h2 class="text-lg font-bold text-slate-900">Data Lakehouse Financier & Text-to-SQL</h2>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">Interrogez la table partitionnée <code class="bg-slate-100 text-amber-900 px-1.5 py-0.5 rounded font-mono text-[11px]">civiclens_finances.balances_communes</code> en langage naturel sans écrire une seule ligne de SQL. Couvre <strong>l'ensemble des 1 260+ communes d'Île-de-France</strong> (75, 77, 78, 91, 92, 93, 94, 95) ainsi que les grandes métropoles nationales (2021-2025).</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-300">Île-de-France (1 260+ communes)</span>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">Partitionné YEAR</span>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-sky-100 text-sky-800 border border-sky-200">Clusterisé INSEE</span>
+          </div>
+        </div>
+
+        <!-- Champ de requête Text-to-SQL -->
+        <div class="space-y-3">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500">Posez votre question analytique en langage naturel</label>
+          <div class="flex flex-col sm:flex-row gap-3">
+            <div class="relative flex-1">
+              <input type="text" id="bqQueryInput" 
+                     placeholder="Ex: Quelles sont les 5 communes les plus endettées par habitant en 2024 ?" 
+                     class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm bg-slate-50/50"
+                     value="Quelles sont les 5 communes qui ont le plus fort montant de dépenses d'équipement en 2024 ?"
+                     onkeydown="if(event.key==='Enter') runBigQueryNLQ()">
+              <span class="absolute right-3 top-2.5 text-slate-400">💡</span>
+            </div>
+            <button onclick="runBigQueryNLQ()" id="btnRunBQ"
+                    class="py-2.5 px-6 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl shadow-md shadow-amber-600/20 text-sm flex items-center justify-center gap-2 transition cursor-pointer shrink-0">
+              <span>⚡</span> Générer SQL & Exécuter
+            </button>
+          </div>
+
+          <!-- Questions suggérées -->
+          <div class="flex flex-wrap items-center gap-1.5 pt-1">
+            <span class="text-xs font-medium text-slate-400 mr-1">Questions suggérées :</span>
+            <button onclick="quickBigQueryNLQ('Quelles sont les 5 communes les plus endettées par habitant en 2024 ?')" class="px-2.5 py-1 text-xs bg-slate-100 hover:bg-amber-50 hover:text-amber-800 rounded-lg text-slate-700 font-medium transition cursor-pointer">Top 5 dette par hab</button>
+            <button onclick="quickBigQueryNLQ('Compare les dépenses de fonctionnement et investissement pour Bordeaux et Pantin')" class="px-2.5 py-1 text-xs bg-slate-100 hover:bg-amber-50 hover:text-amber-800 rounded-lg text-slate-700 font-medium transition cursor-pointer">Bordeaux vs Pantin</button>
+            <button onclick="quickBigQueryNLQ('Quelles communes ont une épargne brute par habitant supérieure à 250 euros ?')" class="px-2.5 py-1 text-xs bg-slate-100 hover:bg-amber-50 hover:text-amber-800 rounded-lg text-slate-700 font-medium transition cursor-pointer">Épargne brute > 250 €/hab</button>
+            <button onclick="quickBigQueryNLQ('Donne les dépenses de personnel des communes du département 93')" class="px-2.5 py-1 text-xs bg-slate-100 hover:bg-amber-50 hover:text-amber-800 rounded-lg text-slate-700 font-medium transition cursor-pointer">Frais de personnel du 93</button>
+          </div>
+        </div>
+
+        <!-- Loading BigQuery -->
+        <div id="loadingBigQuery" class="hidden py-12 text-center space-y-3">
+          <div class="w-8 h-8 border-3 border-amber-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p class="text-sm text-slate-600 font-medium">Génération GoogleSQL par Gemini et scan BigQuery (plafond 100 Mo)...</p>
+        </div>
+
+        <!-- Résultats BigQuery -->
+        <div id="bqResultsContainer" class="hidden space-y-5 pt-4 border-t border-slate-100">
+          
+          <!-- Requête SQL générée -->
+          <div class="bg-slate-900 rounded-xl p-4 text-white space-y-2">
+            <div class="flex items-center justify-between text-xs text-slate-400">
+              <span class="font-bold flex items-center gap-1.5 text-amber-400">
+                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z"/></svg>
+                Requête GoogleSQL Générée par Gemini
+              </span>
+              <span class="font-mono text-[11px] bg-slate-800 px-2 py-0.5 rounded text-slate-300">BigQuery Standard SQL</span>
+            </div>
+            <pre class="text-xs font-mono text-emerald-300 overflow-x-auto whitespace-pre p-2 bg-slate-950/70 rounded-lg" id="bqSqlDisplay"></pre>
+          </div>
+
+          <!-- Synthèse Gemini -->
+          <div class="bg-gradient-to-br from-amber-50/70 via-orange-50/50 to-white border border-amber-200 rounded-xl p-4 sm:p-5 space-y-2">
+            <div class="flex items-center gap-2 text-xs font-bold text-amber-950">
+              <span>🧠</span> Synthèse Décisionnelle des Résultats BigQuery
+            </div>
+            <p id="bqSummaryText" class="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line"></p>
+          </div>
+
+          <!-- Visualisation Graphique des Résultats BigQuery (Chart.js) -->
+          <div id="bqChartCard" class="hidden bg-white border border-amber-200/90 rounded-2xl p-5 shadow-2xs space-y-3">
+            <div class="flex flex-wrap items-center justify-between border-b border-slate-100 pb-3 gap-2">
+              <div class="flex items-center gap-2">
+                <span class="text-lg">📊</span>
+                <div>
+                  <h4 class="text-xs sm:text-sm font-bold text-slate-900" id="bqChartTitle">Visualisation Graphique des Données</h4>
+                  <p class="text-[11px] text-slate-400">Génération automatique assistée par Vertex AI Gemini 3.6 & Chart.js</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <!-- Bascule Type de Graphique -->
+                <div class="inline-flex bg-slate-100 rounded-lg p-0.5 text-xs font-medium text-slate-600">
+                  <button type="button" id="btnBqChartBar" onclick="changeBqChartType('bar')" class="px-2.5 py-1 rounded-md bg-white text-amber-900 font-bold shadow-2xs transition cursor-pointer">
+                    Barres
+                  </button>
+                  <button type="button" id="btnBqChartLine" onclick="changeBqChartType('line')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 transition cursor-pointer">
+                    Courbe
+                  </button>
+                </div>
+                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200" id="bqChartMetricBadge">Indicateur</span>
+              </div>
+            </div>
+            <div class="h-72 relative">
+              <canvas id="chartBigQuery"></canvas>
+            </div>
+          </div>
+
+          <!-- Tableau des résultats -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-slate-800" id="bqRowCount">0 lignes extraites</span>
+              <span class="text-slate-400 text-[11px]">Source : civiclens_finances.balances_communes</span>
+            </div>
+            <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-2xs max-h-96">
+              <table class="w-full text-left text-xs sm:text-sm" id="bqTable">
+                <thead class="bg-slate-100 text-slate-700 text-xs uppercase tracking-wider sticky top-0" id="bqTableHead"></thead>
+                <tbody class="divide-y divide-slate-200 bg-white" id="bqTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </section>
+    </div> <!-- Fin viewBigQuery -->
+
+    <!-- VUE 4 : Explorateur des Jeux de Données de Bercy (650+ Datasets DGFiP / Économie) -->
+    <div id="viewBercy" class="hidden space-y-6">
+      <div class="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200">Catalogue National DGFiP</span>
+              <h2 class="text-lg font-bold text-slate-900">Ministères Économiques et Financiers (Bercy)</h2>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">Explorez et téléchargez les 655 jeux de données officiels : balances comptables, fiscalité directe locale (REI), délais de paiement et marchés publics.</p>
+          </div>
+          <a href="https://www.data.gouv.fr/organizations/ministeres-economiques-et-financiers/datasets" target="_blank"
+             class="text-xs font-semibold text-sky-600 hover:text-sky-700 flex items-center gap-1 hover:underline">
+            Voir sur data.gouv.fr
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+          </a>
+        </div>
+
+        <!-- Filtres et Recherche Bercy -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <div class="md:col-span-8">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Rechercher dans les données de Bercy</label>
+            <div class="relative">
+              <input type="text" id="bercySearchInput" placeholder="Ex: balances, communes, fiscalite, délais de paiement, corruption, dettes..." 
+                     class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm bg-slate-50/50"
+                     value="communes" onkeydown="if(event.key==='Enter') searchBercy()">
+              <span class="absolute right-3 top-2.5 text-slate-400">🔍</span>
+            </div>
+          </div>
+          <div class="md:col-span-4 flex items-end">
+            <button onclick="searchBercy()" id="btnSearchBercy"
+                    class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition shadow-md shadow-indigo-600/20 text-sm flex items-center justify-center gap-1.5 cursor-pointer">
+              <span>🔎</span> Explorer le catalogue Bercy
+            </button>
+          </div>
+        </div>
+
+        <!-- Raccourcis thématiques rapides Bercy -->
+        <div class="flex flex-wrap items-center gap-1.5 pt-1">
+          <span class="text-xs font-medium text-slate-400 mr-1">Raccourcis :</span>
+          <button onclick="quickSearchBercy('communes')" class="px-2.5 py-1 text-xs bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg text-slate-700 font-medium transition cursor-pointer">Balances des communes</button>
+          <button onclick="quickSearchBercy('fiscalite')" class="px-2.5 py-1 text-xs bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg text-slate-700 font-medium transition cursor-pointer">Fiscalité locale (REI)</button>
+          <button onclick="quickSearchBercy('délais de paiement')" class="px-2.5 py-1 text-xs bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg text-slate-700 font-medium transition cursor-pointer">Délais de paiement</button>
+          <button onclick="quickSearchBercy('retraite')" class="px-2.5 py-1 text-xs bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg text-slate-700 font-medium transition cursor-pointer">Retraites & Stocks</button>
+          <button onclick="quickSearchBercy('probite')" class="px-2.5 py-1 text-xs bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg text-slate-700 font-medium transition cursor-pointer">AFA - Probité publique</button>
+        </div>
+
+        <!-- Section Liste des Jeux de Données Bercy -->
+        <div class="pt-4 border-t border-slate-100">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Jeux de Données Trouvés</h3>
+              <span id="bercyTotalCount" class="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-bold">0</span>
+            </div>
+            <span class="text-xs text-slate-400">Ministères Économiques et Financiers</span>
+          </div>
+
+          <!-- Loading Bercy -->
+          <div id="loadingBercy" class="hidden py-12 text-center space-y-3">
+            <div class="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p class="text-sm text-slate-500 font-medium">Interrogation de l'API Bercy / data.gouv.fr...</p>
+          </div>
+
+          <!-- Grille des Datasets Bercy -->
+          <div id="bercyGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Injecté en JS -->
+          </div>
+        </div>
+      </div>
+    </div> <!-- Fin viewBercy -->
+
+  </main>
+
+  <!-- Modal Ajouter une Collectivité / Ville -->
+  <div id="addCityModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-100 space-y-5 max-h-[90vh] overflow-y-auto">
+      
+      <!-- Header Modal -->
+      <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
+        <div>
+          <span class="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200">
+            Open Data Citoyen
+          </span>
+          <h3 class="text-lg font-bold text-slate-900 mt-1">Ajouter une collectivité territoriale</h3>
+          <p class="text-xs text-slate-500 mt-0.5">Connectez une nouvelle ville, commune ou communauté d'agglomération.</p>
+        </div>
+        <button onclick="closeAddCityModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <!-- Formulaire d'ajout -->
+      <form id="addCityForm" onsubmit="submitAddCity(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+            Nom de la ville / commune <span class="text-rose-500">*</span>
+          </label>
+          <input type="text" id="newCityName" required placeholder="Ex: Pau, Angoulême, Saint-Malo, Talant..."
+                 class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 text-sm bg-slate-50/50">
+          <p class="text-[11px] text-slate-400 mt-1">Le département et la région seront automatiquement détectés via l'API nationale Geo.</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+            Identifiant data.gouv.fr (optionnel)
+          </label>
+          <input type="text" id="newCityOrgId" placeholder="Ex: 5fcb9638de0dbe60edb348ce (auto-résolu si vide)"
+                 class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 text-sm bg-slate-50/50">
+          <p class="text-[11px] text-slate-400 mt-1">L'identifiant d'organisation de la mairie sur data.gouv.fr si vous le connaissez.</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+            URL Portail OpenDataSoft (optionnel)
+          </label>
+          <input type="url" id="newCityOdsUrl" placeholder="Ex: https://data.ville.fr/api/explore/v2.1/catalog/datasets/..."
+                 class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 text-sm bg-slate-50/50">
+          <p class="text-[11px] text-slate-400 mt-1">Si la métropole utilise un portail OpenDataSoft dédié (ex: Nantes Métropole).</p>
+        </div>
+
+        <!-- Boutons d'Action -->
+        <div class="flex gap-3 pt-3 border-t border-slate-100">
+          <button type="submit" id="btnSubmitCity"
+                  class="flex-1 py-2.5 px-4 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-xl text-sm transition shadow-md shadow-sky-600/20 flex items-center justify-center gap-1.5 cursor-pointer">
+            <span>✨</span> Ajouter & Explorer
+          </button>
+          <button type="button" onclick="closeAddCityModal()" 
+                  class="py-2.5 px-5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition cursor-pointer">
+            Annuler
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4">
+      CivicLens Platform • Architecture Google Cloud Well-Architected • Données publiques certifiées data.gouv.fr
+    </div>
+  </footer>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform transition duration-300 translate-y-24 opacity-0 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 text-sm">
+    <span id="toastIcon">✨</span>
+    <span id="toastMsg">Action effectuée</span>
+  </div>
+
+  <script>
+    let currentCity = 'Castelmaurou';
+
+    function showToast(msg, icon = '✨') {
+      const t = document.getElementById('toast');
+      document.getElementById('toastMsg').innerText = msg;
+      document.getElementById('toastIcon').innerText = icon;
+      t.classList.remove('translate-y-24', 'opacity-0');
+      setTimeout(() => {
+        t.classList.add('translate-y-24', 'opacity-0');
+      }, 4000);
+    }
+
+    // Charger le profil utilisateur
+    async function loadUserProfile() {
+      try {
+        const res = await fetch('/api/me');
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById('userEmail').innerText = data.user_email || 'Utilisateur IAP';
+          document.getElementById('userInfo').classList.remove('hidden');
+        }
+      } catch (e) {
+        console.warn('IAP local:', e);
+      }
+    }
+
+    // Charger les villes prédéfinies
+    async function loadCollectivities() {
+      try {
+        const res = await fetch('/api/collectivities');
+        if (res.ok) {
+          const data = await res.json();
+          const pills = document.getElementById('quickPills');
+          const dl = document.getElementById('citiesList');
+          pills.innerHTML = '';
+          if (dl) dl.innerHTML = '';
+          data.forEach(c => {
+            const shortName = c.name.replace('Commune de ', '').replace('Mairie de ', '').replace('Ville de ', '').split(' (')[0].trim();
+            const btn = document.createElement('button');
+            btn.className = "px-3 py-1 text-xs font-medium rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-sky-50 hover:text-sky-700 hover:border-sky-200 transition cursor-pointer";
+            btn.innerText = shortName;
+            btn.title = `${c.name} (${c.department}) - ${c.count_approx}`;
+            btn.onclick = () => {
+              document.getElementById('cityInput').value = shortName;
+              loadCommuneFinances(shortName);
+            };
+            pills.appendChild(btn);
+
+            if (dl) {
+              const opt = document.createElement('option');
+              opt.value = shortName;
+              opt.label = `${c.name} (${c.department})`;
+              dl.appendChild(opt);
+            }
+          });
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // Poser une question au chat RAG
+    function setQuery(q) {
+      const input = document.getElementById('chatInput');
+      if (input) {
+        input.value = q;
+        const form = document.getElementById('chatForm');
+        if (form) form.dispatchEvent(new Event('submit'));
+      }
+    }
+
+    async function sendChatMessage(e) {
+      e.preventDefault();
+      const input = document.getElementById('chatInput');
+      const question = input.value.trim();
+      if (!question) return;
+
+      const chatBox = document.getElementById('chatMessages');
+
+      // Message Utilisateur
+      const userDiv = document.createElement('div');
+      userDiv.className = "flex gap-3 items-start justify-end";
+      userDiv.innerHTML = `
+        <div class="bg-sky-600 text-white rounded-2xl rounded-tr-none p-3.5 max-w-[85%] text-sm">
+          ${question}
+        </div>
+      `;
+      chatBox.appendChild(userDiv);
+      input.value = '';
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      // Réponse RAG en attente
+      const loadingDiv = document.createElement('div');
+      loadingDiv.className = "flex gap-3 items-start";
+      loadingDiv.innerHTML = `
+        <div class="w-8 h-8 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-xs shrink-0">CL</div>
+        <div class="bg-slate-50 rounded-2xl rounded-tl-none p-3.5 text-slate-500 border border-slate-100 text-xs flex items-center gap-2">
+          <div class="w-3 h-3 border-2 border-sky-600 border-t-transparent rounded-full animate-spin"></div>
+          Recherche vectorielle et synthèse Gemini...
+        </div>
+      `;
+      chatBox.appendChild(loadingDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      const model = document.getElementById('modelSelect')?.value || 'gemini-3.6-flash';
+      const city = document.getElementById('cityInput')?.value.trim() || currentCity;
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: question, city: city, model: model })
+        });
+        
+        if (!res.ok) {
+          throw new Error(`Erreur serveur HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        chatBox.removeChild(loadingDiv);
+
+        const botDiv = document.createElement('div');
+        botDiv.className = "flex gap-3 items-start";
+        
+        let sourcesHtml = '';
+        if (data.sources && data.sources.length > 0) {
+          sourcesHtml = '<div class="mt-3 pt-2 border-t border-slate-200 text-[11px] text-slate-500 space-y-1"><strong>Sources officielles :</strong>';
+          data.sources.forEach(s => {
+            sourcesHtml += `<div>• [${s.city}] ${s.title} (${s.amount_eur ? s.amount_eur + ' €' : 'N/A'})</div>`;
+          });
+          sourcesHtml += '</div>';
+        }
+
+        const renderedAnswer = (typeof marked !== 'undefined' && marked.parse) 
+          ? marked.parse(data.answer || '') 
+          : `<div class="whitespace-pre-wrap">${data.answer || ''}</div>`;
+
+        botDiv.innerHTML = `
+          <div class="w-8 h-8 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-xs shrink-0">CL</div>
+          <div class="bg-slate-50 rounded-2xl rounded-tl-none p-3.5 text-slate-800 border border-slate-100 max-w-[85%] text-xs sm:text-sm leading-relaxed prose prose-slate prose-sm max-w-none">
+            ${renderedAnswer}
+            ${sourcesHtml}
+          </div>
+        `;
+        chatBox.appendChild(botDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      } catch (err) {
+        if (chatBox.contains(loadingDiv)) chatBox.removeChild(loadingDiv);
+        const errDiv = document.createElement('div');
+        errDiv.className = "flex gap-3 items-start";
+        errDiv.innerHTML = `
+          <div class="w-8 h-8 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-xs shrink-0">⚠️</div>
+          <div class="bg-rose-50 rounded-2xl rounded-tl-none p-3 text-rose-700 border border-rose-200 text-xs">
+            Impossible de contacter l'assistant : ${err.message || 'Délai d\'attente dépassé'}. Veuillez réessayer.
+          </div>
+        `;
+        chatBox.appendChild(errDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+        showToast("Erreur lors de l'appel au service de chat", "❌");
+      }
+    }
+
+    // Initialisation
+    
+    
+    function quickSelectCity(cityName) {
+      document.getElementById('cityInput').value = cityName;
+      loadCommuneFinances(cityName);
+    }
+
+    // --- Observatoire des Comptes Publics (OFGL / DGFiP) ---
+    let chartAmountsInstance = null;
+    let chartPerHabInstance = null;
+    let currentFinanceData = null;
+
+    async function loadCommuneFinances(cityName = null) {
+      const target = cityName || document.getElementById('cityInput').value.trim();
+      if (!target) return;
+
+      const btn = document.getElementById('btnFinances');
+      if (btn) btn.innerHTML = `<div class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>`;
+
+      try {
+        const res = await fetch(`/api/finances/commune?query=${encodeURIComponent(target)}`);
+        if (!res.ok) {
+          showToast(`Données financières non disponibles pour "${target}"`, "⚠️");
+          return;
+        }
+
+        const data = await res.json();
+        currentFinanceData = data;
+        currentCity = data.nom || target;
+        const inputElem = document.getElementById('cityInput');
+        if (inputElem && inputElem.value !== (data.nom || target)) {
+          inputElem.value = data.nom || target;
+        }
+        renderFinancesUI(data);
+      } catch (err) {
+        console.error("Erreur chargement finances:", err);
+        showToast("Erreur lors de la récupération des comptes publics", "❌");
+      } finally {
+        if (btn) btn.innerHTML = `<span>📊</span> Consulter`;
+      }
+    }
+
+    function renderFinancesUI(data) {
+      const cityTitle = document.getElementById('financeCityTitle');
+      const citySubtitle = document.getElementById('financeCitySubtitle');
+      cityTitle.innerText = `Observatoire Financier : ${data.nom || 'Commune'}`;
+      citySubtitle.innerText = `${data.departement || ''} • Intercommunalité : ${data.epci || 'Non renseignée'} • Population : ${(data.population || 0).toLocaleString('fr-FR')} hab.`;
+
+      const lm = data.latest_metrics || {};
+      const annee = lm.annee || (data.years && data.years.length > 0 ? data.years[data.years.length - 1] : '2024');
+
+      document.getElementById('kpiFonctionnement').innerText = `${((lm.depenses_fonctionnement || 0) / 1e6).toFixed(1)} M€`;
+      document.getElementById('kpiFonctionnementHab').innerText = `${Math.round(lm.depenses_fonctionnement_par_hab || 0).toLocaleString('fr-FR')} € / hab (${annee})`;
+
+      document.getElementById('kpiEquipement').innerText = `${((lm.depenses_equipement || 0) / 1e6).toFixed(1)} M€`;
+      document.getElementById('kpiEquipementHab').innerText = `${Math.round(lm.depenses_equipement_par_hab || 0).toLocaleString('fr-FR')} € / hab (${annee})`;
+
+      document.getElementById('kpiDette').innerText = `${((lm.encours_dette || 0) / 1e6).toFixed(1)} M€`;
+      document.getElementById('kpiDetteHab').innerText = `${Math.round(lm.encours_dette_par_hab || 0).toLocaleString('fr-FR')} € / hab (${annee})`;
+
+      const desend = lm.capacite_desendettement_annees;
+      document.getElementById('kpiDesendettement').innerText = desend ? `${desend} ans` : 'Sain';
+      document.getElementById('kpiEpargneBrute').innerText = `Épargne brute: ${((lm.epargne_brute || 0) / 1e6).toFixed(1)} M€`;
+
+      renderFinanceCharts(data);
+    }
+
+    function renderFinanceCharts(data) {
+      if (typeof Chart === 'undefined') return;
+
+      const years = data.years || [];
+      const sFonc = data.series?.fonctionnement || [];
+      const sEquip = data.series?.investissement || [];
+      const sDette = data.series?.dette || [];
+
+      // Montants en M€
+      const foncVals = sFonc.map(x => (x.montant / 1e6).toFixed(1));
+      const equipVals = sEquip.map(x => (x.montant / 1e6).toFixed(1));
+      const detteVals = sDette.map(x => (x.montant / 1e6).toFixed(1));
+
+      // Par habitant (€/hab)
+      const detteHab = sDette.map(x => Math.round(x.euros_par_habitant));
+      const equipHab = sEquip.map(x => Math.round(x.euros_par_habitant));
+
+      const ctxAmounts = document.getElementById('chartFinanceAmounts').getContext('2d');
+      if (chartAmountsInstance) chartAmountsInstance.destroy();
+
+      chartAmountsInstance = new Chart(ctxAmounts, {
+        type: 'bar',
+        data: {
+          labels: years,
+          datasets: [
+            {
+              label: 'Fonctionnement (M€)',
+              data: foncVals,
+              backgroundColor: 'rgba(2, 132, 199, 0.7)',
+              borderRadius: 4
+            },
+            {
+              label: 'Équipement (M€)',
+              data: equipVals,
+              backgroundColor: 'rgba(16, 185, 129, 0.7)',
+              borderRadius: 4
+            },
+            {
+              label: 'Encours Dette (M€)',
+              data: detteVals,
+              backgroundColor: 'rgba(225, 29, 72, 0.7)',
+              borderRadius: 4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { callback: v => v + ' M€' }
+            }
+          },
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } }
+          }
+        }
+      });
+
+      const ctxHab = document.getElementById('chartFinancePerHab').getContext('2d');
+      if (chartPerHabInstance) chartPerHabInstance.destroy();
+
+      chartPerHabInstance = new Chart(ctxHab, {
+        type: 'line',
+        data: {
+          labels: years,
+          datasets: [
+            {
+              label: 'Dette (€ / hab)',
+              data: detteHab,
+              borderColor: '#e11d48',
+              backgroundColor: 'rgba(225, 29, 72, 0.1)',
+              tension: 0.3,
+              fill: true
+            },
+            {
+              label: 'Investissement (€ / hab)',
+              data: equipHab,
+              borderColor: '#0284c7',
+              backgroundColor: 'rgba(2, 132, 199, 0.1)',
+              tension: 0.3,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { callback: v => v + ' €' }
+            }
+          },
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } }
+          }
+        }
+      });
+    }
+
+    async function launchFinancialAudit() {
+      const city = document.getElementById('cityInput').value.trim();
+      const model = document.getElementById('modelSelect').value;
+      const btn = document.getElementById('btnAuditIA');
+      const panel = document.getElementById('auditReportPanel');
+      const content = document.getElementById('auditReportContent');
+      const badge = document.getElementById('auditModelUsed');
+
+      btn.disabled = true;
+      btn.innerHTML = `<div class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Audit en cours...`;
+      showToast(`Audit financier de ${city} avec ${model} via Vertex AI...`, "⏳");
+
+      try {
+        const res = await fetch(`/api/finances/audit?query=${encodeURIComponent(city)}&model=${encodeURIComponent(model)}`, {
+          method: 'POST'
+        });
+        const data = await res.json();
+        btn.disabled = false;
+        btn.innerHTML = `<span>✨</span> Régénérer l'audit Gemini`;
+
+        if (res.ok && data.audit_report) {
+          badge.innerText = data.model_used || model;
+          content.innerText = data.audit_report;
+          panel.classList.remove('hidden');
+          showToast(`Audit budgétaire généré avec succès !`, "✅");
+          panel.scrollIntoView({ behavior: 'smooth' });
+        } else {
+          showToast(data.detail || "Impossible de générer l'audit financier", "❌");
+        }
+      } catch (err) {
+        btn.disabled = false;
+        btn.innerHTML = `<span>✨</span> Générer l'audit budgétaire Gemini`;
+        console.error("Erreur audit:", err);
+        showToast("Erreur de communication lors de l'audit", "❌");
+      }
+    }
+
+    // --- Téléchargement du Rapport d'Audit PDF (M57) ---
+    async function downloadAuditPdf(cityName = null) {
+      const city = cityName || document.getElementById('cityInput').value.trim();
+      const model = document.getElementById('modelSelect').value;
+      const btn = document.getElementById('btnDownloadPdf');
+
+      if (!city) {
+        showToast("Veuillez spécifier une commune.", "⚠️");
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<div class="w-3.5 h-3.5 border-2 border-slate-700 border-t-transparent rounded-full animate-spin"></div> PDF...`;
+      }
+      showToast(`Génération du rapport PDF officiel M57 pour ${city}...`, "📄");
+
+      try {
+        const url = `/api/finances/report/pdf?query=${encodeURIComponent(city)}&model=${encodeURIComponent(model)}`;
+        const res = await fetch(url);
+        if (!res.ok) {
+          throw new Error(`Erreur lors de la génération du PDF (${res.status})`);
+        }
+        const blob = await res.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = `Rapport_Audit_${city.replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(blobUrl);
+        showToast(`Rapport PDF téléchargé avec succès !`, "✅");
+      } catch (err) {
+        console.error("Erreur download PDF:", err);
+        showToast(`Échec du téléchargement PDF : ${err.message}`, "❌");
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<span>📄</span> Télécharger PDF (M57)`;
+        }
+      }
+    }
+
+    // --- Navigation par Onglets Principaux ---
+    function switchMainTab(tab) {
+      const vCommunes = document.getElementById('viewCommunes');
+      const vBenchmark = document.getElementById('viewBenchmark');
+      const vBigQuery = document.getElementById('viewBigQuery');
+      const vBercy = document.getElementById('viewBercy');
+
+      const btnCommunes = document.getElementById('tabBtnCommunes');
+      const btnBenchmark = document.getElementById('tabBtnBenchmark');
+      const btnBigQuery = document.getElementById('tabBtnBigQuery');
+      const btnBercy = document.getElementById('tabBtnBercy');
+
+      // Masquer toutes les vues
+      [vCommunes, vBenchmark, vBigQuery, vBercy].forEach(v => {
+        if (v) v.classList.add('hidden');
+      });
+
+      // Réinitialiser le style des boutons
+      const defaultBtnClass = "px-4 py-2.5 rounded-xl font-bold text-sm bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 shadow-2xs flex items-center gap-2 transition cursor-pointer";
+      [btnCommunes, btnBenchmark, btnBigQuery, btnBercy].forEach(b => {
+        if (b) b.className = defaultBtnClass;
+      });
+
+      if (tab === 'communes') {
+        vCommunes.classList.remove('hidden');
+        btnCommunes.className = "px-4 py-2.5 rounded-xl font-bold text-sm bg-sky-600 text-white shadow-sm flex items-center gap-2 transition cursor-pointer";
+      } else if (tab === 'benchmark') {
+        vBenchmark.classList.remove('hidden');
+        btnBenchmark.className = "px-4 py-2.5 rounded-xl font-bold text-sm bg-indigo-600 text-white shadow-sm flex items-center gap-2 transition cursor-pointer";
+      } else if (tab === 'bigquery') {
+        vBigQuery.classList.remove('hidden');
+        btnBigQuery.className = "px-4 py-2.5 rounded-xl font-bold text-sm bg-amber-600 text-white shadow-sm flex items-center gap-2 transition cursor-pointer";
+      } else if (tab === 'bercy') {
+        vBercy.classList.remove('hidden');
+        btnBercy.className = "px-4 py-2.5 rounded-xl font-bold text-sm bg-indigo-600 text-white shadow-sm flex items-center gap-2 transition cursor-pointer";
+        if (document.getElementById('bercyGrid').children.length === 0) {
+          searchBercy();
+        }
+      }
+    }
+
+    // --- Benchmark & Comparateur Territorial & Prompts Personnalisables ---
+    let chartBenchmarkInstance = null;
+
+    const DEFAULT_BENCHMARK_PROMPTS = {
+      part_1: "Compare la structure des recettes vs dépenses réelles de fonctionnement et le poids de la masse salariale par habitant. Analyse l'effet de ciseau potentiel et l'efficacité de gestion de chaque commune.",
+      part_2: "Confronte les niveaux d'épargne brute (CAF) et l'effort consenti en dépenses d'équipement par habitant. Quelle collectivité prépare le plus activement ses infrastructures et transitions d'avenir ?",
+      part_3: "Analyse la charge de l'encours de la dette par habitant et le délai théorique de désendettement en années au regard du seuil de vigilance national (10-12 ans). Évalue les marges de manœuvre d'emprunt résiduelles.",
+      part_4: "Dresse une synthèse conclusive claire : points forts, vulnérabilités respectives, profil de notation synthétique et recommandations budgétaires pour chaque équipe municipale."
+    };
+
+    function initBenchmarkPrompts() {
+      ['part_1', 'part_2', 'part_3', 'part_4'].forEach((pk, idx) => {
+        const num = idx + 1;
+        const ta = document.getElementById(`promptPart${num}`);
+        if (ta && !ta.value.trim()) {
+          ta.value = DEFAULT_BENCHMARK_PROMPTS[pk];
+        }
+      });
+      checkPromptsModified();
+    }
+
+    function checkPromptsModified() {
+      let modifiedCount = 0;
+      ['part_1', 'part_2', 'part_3', 'part_4'].forEach((pk, idx) => {
+        const num = idx + 1;
+        const ta = document.getElementById(`promptPart${num}`);
+        const cnt = document.getElementById(`charCountPart${num}`);
+        if (ta) {
+          const val = ta.value.trim();
+          if (cnt) cnt.innerText = `${val.length} car.`;
+          if (val !== DEFAULT_BENCHMARK_PROMPTS[pk].trim()) {
+            modifiedCount++;
+          }
+        }
+      });
+
+      const badge = document.getElementById('promptsStatusBadge');
+      if (badge) {
+        if (modifiedCount > 0) {
+          badge.className = "text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300";
+          badge.innerText = `🎯 ${modifiedCount} volet${modifiedCount > 1 ? 's' : ''} personnalisé${modifiedCount > 1 ? 's' : ''}`;
+        } else {
+          badge.className = "text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200";
+          badge.innerText = "4 volets par défaut";
+        }
+      }
+    }
+
+    function resetBenchmarkPrompt(partKey) {
+      const idxMap = { 'part_1': 1, 'part_2': 2, 'part_3': 3, 'part_4': 4 };
+      const num = idxMap[partKey];
+      const ta = document.getElementById(`promptPart${num}`);
+      if (ta) {
+        ta.value = DEFAULT_BENCHMARK_PROMPTS[partKey];
+        checkPromptsModified();
+        showToast(`Volet ${num} réinitialisé au prompt de référence`, "↺");
+      }
+    }
+
+    function resetAllBenchmarkPrompts() {
+      ['part_1', 'part_2', 'part_3', 'part_4'].forEach((pk, idx) => {
+        const ta = document.getElementById(`promptPart${idx + 1}`);
+        if (ta) ta.value = DEFAULT_BENCHMARK_PROMPTS[pk];
+      });
+      checkPromptsModified();
+      showToast("Tous les prompts ont été rétablis aux valeurs par défaut", "🔄");
+    }
+
+    function setBenchmarkPair(cityA, cityB) {
+      document.getElementById('benchCityA').value = cityA;
+      document.getElementById('benchCityB').value = cityB;
+      runCommuneBenchmark();
+    }
+
+    async function runCommuneBenchmark() {
+      const cityA = document.getElementById('benchCityA').value.trim();
+      const cityB = document.getElementById('benchCityB').value.trim();
+      const btn = document.getElementById('btnRunBenchmark');
+      const loader = document.getElementById('loadingBenchmark');
+      const results = document.getElementById('benchmarkResults');
+
+      if (!cityA || !cityB) {
+        showToast("Veuillez renseigner deux communes à comparer", "⚠️");
+        return;
+      }
+
+      btn.disabled = true;
+      loader.classList.remove('hidden');
+      results.classList.add('hidden');
+
+      const selectedModel = document.getElementById('modelSelect')?.value || 'gemini-3.6-flash';
+
+      // Récupération des prompts personnalisés pour les 4 volets
+      const customPrompts = {
+        part_1: document.getElementById('promptPart1')?.value.trim() || DEFAULT_BENCHMARK_PROMPTS.part_1,
+        part_2: document.getElementById('promptPart2')?.value.trim() || DEFAULT_BENCHMARK_PROMPTS.part_2,
+        part_3: document.getElementById('promptPart3')?.value.trim() || DEFAULT_BENCHMARK_PROMPTS.part_3,
+        part_4: document.getElementById('promptPart4')?.value.trim() || DEFAULT_BENCHMARK_PROMPTS.part_4
+      };
+
+      const isModified = Object.keys(customPrompts).some(k => customPrompts[k] !== DEFAULT_BENCHMARK_PROMPTS[k].trim());
+
+      try {
+        const res = await fetch('/api/finances/compare', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            commune_a: cityA,
+            commune_b: cityB,
+            model: selectedModel,
+            custom_prompts: customPrompts
+          })
+        });
+
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.detail || "Erreur lors de la comparaison");
+        }
+        const data = await res.json();
+        renderBenchmarkUI(data, selectedModel);
+        results.classList.remove('hidden');
+        results.scrollIntoView({ behavior: 'smooth' });
+        if (isModified) {
+          showToast(`Benchmark généré avec vos consignes sur-mesure !`, "🎯");
+        } else {
+          showToast(`Benchmark territorial généré avec ${selectedModel} !`, "✅");
+        }
+      } catch (err) {
+        console.error("Erreur benchmark:", err);
+        showToast(err.message, "❌");
+      } finally {
+        btn.disabled = false;
+        loader.classList.add('hidden');
+      }
+    }
+
+    function renderBenchmarkUI(data, selectedModel = 'gemini-3.6-flash') {
+      const nameA = data.commune_a?.nom || data.commune_a || 'Commune A';
+      const nameB = data.commune_b?.nom || data.commune_b || 'Commune B';
+      const metricsA = data.commune_a?.metrics || data.metrics_a || {};
+      const metricsB = data.commune_b?.metrics || data.metrics_b || {};
+      const popA = data.commune_a?.population || data.population_a || 0;
+      const popB = data.commune_b?.population || data.population_b || 0;
+      const deltas = data.deltas_per_hab || {};
+
+      const badge = document.getElementById('benchmarkModelBadge');
+      if (badge) {
+        if ((selectedModel || '').includes('3.6')) {
+          badge.innerText = `⚡ Gemini 3.6 Flash (Vertex AI)`;
+        } else if ((selectedModel || '').includes('pro')) {
+          badge.innerText = `🌟 Gemini 2.5 Pro (Vertex AI)`;
+        } else {
+          badge.innerText = `⚡ Gemini 2.5 Flash (europe-west1)`;
+        }
+      }
+
+      const customBadge = document.getElementById('benchmarkCustomBadge');
+      if (customBadge) {
+        if (data.is_customized) {
+          customBadge.classList.remove('hidden');
+        } else {
+          customBadge.classList.add('hidden');
+        }
+      }
+
+      document.getElementById('benchmarkTitle').innerText = `${nameA} vs ${nameB}`;
+      document.getElementById('benchmarkSubtitle').innerText = `Exercice M57 : ${metricsA.annee || metricsB.annee || '2024'} • Sources DGFiP / OFGL`;
+      document.getElementById('benchColA').innerText = `${nameA} (${popA.toLocaleString('fr-FR')} hab)`;
+      document.getElementById('benchColB').innerText = `${nameB} (${popB.toLocaleString('fr-FR')} hab)`;
+
+      const rows = [
+        { label: "Dépenses réelles de fonctionnement", valA: metricsA.depenses_fonctionnement_par_hab, valB: metricsB.depenses_fonctionnement_par_hab, delta: deltas.depenses_fonctionnement, lowerIsBetter: true },
+        { label: "Recettes réelles de fonctionnement", valA: metricsA.recettes_fonctionnement_par_hab, valB: metricsB.recettes_fonctionnement_par_hab, delta: deltas.recettes_fonctionnement, lowerIsBetter: false },
+        { label: "Dépenses réelles d'équipement (Investissement)", valA: metricsA.depenses_equipement_par_hab, valB: metricsB.depenses_equipement_par_hab, delta: deltas.depenses_equipement, lowerIsBetter: false },
+        { label: "Épargne brute (Capacité d'autofinancement)", valA: metricsA.epargne_brute_par_hab, valB: metricsB.epargne_brute_par_hab, delta: deltas.epargne_brute, lowerIsBetter: false },
+        { label: "Encours de la dette", valA: metricsA.encours_dette_par_hab, valB: metricsB.encours_dette_par_hab, delta: deltas.encours_dette, lowerIsBetter: true },
+      ];
+
+      const tbody = document.getElementById('benchmarkTableBody');
+      tbody.innerHTML = '';
+
+      rows.forEach(r => {
+        const vA = r.valA ? `${Math.round(r.valA).toLocaleString('fr-FR')} €/hab` : 'N/A';
+        const vB = r.valB ? `${Math.round(r.valB).toLocaleString('fr-FR')} €/hab` : 'N/A';
+        const d = r.delta !== undefined ? r.delta : (r.valA && r.valB ? Math.round(r.valA - r.valB) : 0);
+        const sign = d > 0 ? `+${d.toLocaleString('fr-FR')}` : `${d.toLocaleString('fr-FR')}`;
+        
+        let deltaColor = "text-slate-600";
+        if (r.lowerIsBetter) {
+          deltaColor = d < 0 ? "text-emerald-600 font-bold" : (d > 0 ? "text-rose-600 font-bold" : "text-slate-600");
+        } else {
+          deltaColor = d > 0 ? "text-emerald-600 font-bold" : (d < 0 ? "text-rose-600 font-bold" : "text-slate-600");
+        }
+
+        const pct = r.valB && r.valB !== 0 ? ((d / r.valB) * 100).toFixed(1) : '0';
+        const pctSign = Number(pct) > 0 ? `+${pct}%` : `${pct}%`;
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition";
+        tr.innerHTML = `
+          <td class="p-3 font-semibold text-slate-800">${r.label}</td>
+          <td class="p-3 font-bold text-sky-700">${vA}</td>
+          <td class="p-3 font-bold text-indigo-700">${vB}</td>
+          <td class="p-3 ${deltaColor}">${sign} €/hab</td>
+          <td class="p-3 ${deltaColor}">${pctSign}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Ligne Désendettement
+      const desA = metricsA.capacite_desendettement_annees ? `${metricsA.capacite_desendettement_annees} ans` : 'Sain';
+      const desB = metricsB.capacite_desendettement_annees ? `${metricsB.capacite_desendettement_annees} ans` : 'Sain';
+      const trDes = document.createElement('tr');
+      trDes.className = "bg-slate-50/50 hover:bg-slate-100 transition font-semibold";
+      trDes.innerHTML = `
+        <td class="p-3 text-slate-900">Capacité de désendettement (seuil: 10-12 ans)</td>
+        <td class="p-3 text-sky-700">${desA}</td>
+        <td class="p-3 text-indigo-700">${desB}</td>
+        <td class="p-3 text-slate-500">-</td>
+        <td class="p-3 text-slate-500">-</td>
+      `;
+      tbody.appendChild(trDes);
+
+      // Graphique Chart.js Comparatif
+      if (typeof Chart !== 'undefined') {
+        const ctx = document.getElementById('chartBenchmark').getContext('2d');
+        if (chartBenchmarkInstance) chartBenchmarkInstance.destroy();
+
+        chartBenchmarkInstance = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: ['Fonctionnement', 'Équipement', 'Dette', 'Épargne brute'],
+            datasets: [
+              {
+                label: nameA,
+                data: [
+                  Math.round(metricsA.depenses_fonctionnement_par_hab || 0),
+                  Math.round(metricsA.depenses_equipement_par_hab || 0),
+                  Math.round(metricsA.encours_dette_par_hab || 0),
+                  Math.round(metricsA.epargne_brute_par_hab || 0)
+                ],
+                backgroundColor: 'rgba(2, 132, 199, 0.8)',
+                borderRadius: 6
+              },
+              {
+                label: nameB,
+                data: [
+                  Math.round(metricsB.depenses_fonctionnement_par_hab || 0),
+                  Math.round(metricsB.depenses_equipement_par_hab || 0),
+                  Math.round(metricsB.encours_dette_par_hab || 0),
+                  Math.round(metricsB.epargne_brute_par_hab || 0)
+                ],
+                backgroundColor: 'rgba(99, 102, 241, 0.8)',
+                borderRadius: 6
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: { callback: v => v + ' €/hab' }
+              }
+            },
+            plugins: {
+              legend: { position: 'bottom' }
+            }
+          }
+        });
+      }
+
+      // Arbitrage Gemini avec rendu Markdown enrichi
+      const sumElem = document.getElementById('benchmarkSummaryText');
+      const rawAnalysis = data.comparative_analysis || data.gemini_comparison_summary || "Synthèse comparative non disponible.";
+      if (typeof marked !== 'undefined' && marked.parse) {
+        sumElem.innerHTML = marked.parse(rawAnalysis);
+      } else {
+        sumElem.innerText = rawAnalysis;
+      }
+    }
+
+    // --- Data Lakehouse BigQuery (Text-to-SQL IA) ---
+    function quickBigQueryNLQ(query) {
+      document.getElementById('bqQueryInput').value = query;
+      runBigQueryNLQ();
+    }
+
+    // --- Visualisation Graphique BigQuery (Chart.js) ---
+    let chartBqInstance = null;
+    let currentBqChartConfig = null;
+
+    function renderBqChart(chartConfig, forceType = null) {
+      const card = document.getElementById('bqChartCard');
+      if (!card) return;
+
+      if (!chartConfig || !chartConfig.can_visualize || !chartConfig.datasets || chartConfig.datasets.length === 0) {
+        card.classList.add('hidden');
+        return;
+      }
+
+      currentBqChartConfig = chartConfig;
+      card.classList.remove('hidden');
+
+      const titleElem = document.getElementById('bqChartTitle');
+      if (titleElem && chartConfig.title) {
+        titleElem.innerText = chartConfig.title;
+      }
+
+      const badgeElem = document.getElementById('bqChartMetricBadge');
+      if (badgeElem) {
+        const u = chartConfig.unit ? ` (${chartConfig.unit})` : '';
+        badgeElem.innerText = `${chartConfig.metric_name || 'Indicateur'}${u}`;
+      }
+
+      const type = forceType || chartConfig.type || 'bar';
+
+      const btnBar = document.getElementById('btnBqChartBar');
+      const btnLine = document.getElementById('btnBqChartLine');
+      if (btnBar && btnLine) {
+        if (type === 'bar') {
+          btnBar.className = "px-2.5 py-1 rounded-md bg-white text-amber-900 font-bold shadow-2xs transition cursor-pointer";
+          btnLine.className = "px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 transition cursor-pointer";
+        } else {
+          btnLine.className = "px-2.5 py-1 rounded-md bg-white text-amber-900 font-bold shadow-2xs transition cursor-pointer";
+          btnBar.className = "px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 transition cursor-pointer";
+        }
+      }
+
+      const canvas = document.getElementById('chartBigQuery');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (chartBqInstance) {
+        chartBqInstance.destroy();
+      }
+
+      const unit = chartConfig.unit || '';
+
+      const datasets = chartConfig.datasets.map(ds => ({
+        ...ds,
+        type: type,
+        borderRadius: type === 'bar' ? 6 : 0,
+        tension: type === 'line' ? 0.3 : 0,
+        fill: type === 'line' ? false : true
+      }));
+
+      chartBqInstance = new Chart(ctx, {
+        type: type,
+        data: {
+          labels: chartConfig.labels,
+          datasets: datasets
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(val) {
+                  if (Math.abs(val) >= 1e6) {
+                    return (val / 1e6).toFixed(1) + ' M' + (unit.includes('€') ? '€' : '');
+                  } else if (Math.abs(val) >= 1e3) {
+                    return (val / 1e3).toFixed(0) + ' k' + (unit.includes('€') ? '€' : '');
+                  }
+                  return val.toLocaleString('fr-FR') + (unit ? ' ' + unit : '');
+                }
+              }
+            },
+            x: {
+              ticks: {
+                maxRotation: 45,
+                minRotation: 0,
+                autoSkip: true,
+                font: { size: 11 }
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: datasets.length > 1,
+              position: 'bottom',
+              labels: { boxWidth: 12, font: { size: 11 } }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const val = context.parsed.y;
+                  const formatted = val !== null ? val.toLocaleString('fr-FR') : '';
+                  return `${context.dataset.label || ''}: ${formatted} ${unit}`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function changeBqChartType(type) {
+      if (currentBqChartConfig) {
+        renderBqChart(currentBqChartConfig, type);
+      }
+    }
+
+    async function runBigQueryNLQ() {
+      const q = document.getElementById('bqQueryInput').value.trim();
+      const btn = document.getElementById('btnRunBQ');
+      const loader = document.getElementById('loadingBigQuery');
+      const container = document.getElementById('bqResultsContainer');
+
+      if (!q) return;
+
+      btn.disabled = true;
+      loader.classList.remove('hidden');
+      container.classList.add('hidden');
+
+      try {
+        const res = await fetch('/api/finances/analytics/nlq', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: q, limit: 20, model: 'gemini-3.6-flash' })
+        });
+        const data = await res.json();
+        
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        document.getElementById('bqSqlDisplay').innerText = data.sql_query || '-- Aucun SQL généré';
+        document.getElementById('bqSummaryText').innerText = data.summary || 'Analyse terminée.';
+        document.getElementById('bqRowCount').innerText = `${data.row_count || 0} résultat(s) retourné(s)`;
+
+        // Visualisation Graphique (si disponible pour cette requête)
+        if (data.chart && data.chart.can_visualize) {
+          renderBqChart(data.chart);
+        } else {
+          document.getElementById('bqChartCard')?.classList.add('hidden');
+        }
+
+        // Construction du tableau
+        const head = document.getElementById('bqTableHead');
+        const body = document.getElementById('bqTableBody');
+        head.innerHTML = '';
+        body.innerHTML = '';
+
+        if (data.rows && data.rows.length > 0) {
+          const keys = Object.keys(data.rows[0]);
+          const trHead = document.createElement('tr');
+          keys.forEach(k => {
+            const th = document.createElement('th');
+            th.className = "p-3 font-semibold";
+            th.innerText = k.replace(/_/g, ' ').toUpperCase();
+            trHead.appendChild(th);
+          });
+          head.appendChild(trHead);
+
+          data.rows.forEach(r => {
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-slate-50 transition";
+            keys.forEach(k => {
+              const td = document.createElement('td');
+              td.className = "p-3 text-slate-700 font-mono text-xs";
+              const val = r[k];
+              if (typeof val === 'number') {
+                td.innerText = val.toLocaleString('fr-FR');
+              } else {
+                td.innerText = val !== null && val !== undefined ? String(val) : '-';
+              }
+              tr.appendChild(td);
+            });
+            body.appendChild(tr);
+          });
+        }
+
+        container.classList.remove('hidden');
+        container.scrollIntoView({ behavior: 'smooth' });
+        showToast("Requête BigQuery exécutée avec succès !", "⚡");
+      } catch (err) {
+        console.error("Erreur NLQ BigQuery:", err);
+        showToast(`Erreur BigQuery : ${err.message}`, "❌");
+      } finally {
+        btn.disabled = false;
+        loader.classList.add('hidden');
+      }
+    }
+
+    // --- Explorateur des Jeux de Données de Bercy ---
+    async function quickSearchBercy(query) {
+      document.getElementById('bercySearchInput').value = query;
+      searchBercy();
+    }
+
+    async function searchBercy() {
+      const q = document.getElementById('bercySearchInput').value.trim();
+      const loader = document.getElementById('loadingBercy');
+      const grid = document.getElementById('bercyGrid');
+      const countSpan = document.getElementById('bercyTotalCount');
+      const btn = document.getElementById('btnSearchBercy');
+
+      loader.classList.remove('hidden');
+      grid.innerHTML = '';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(`/api/bercy/datasets?query=${encodeURIComponent(q)}&page=1&page_size=12`);
+        const data = await res.json();
+        loader.classList.add('hidden');
+        btn.disabled = false;
+
+        countSpan.innerText = `${data.total || 0} jeux de données`;
+
+        if (!data.datasets || data.datasets.length === 0) {
+          grid.innerHTML = `<div class="col-span-3 text-center py-10 text-slate-400">Aucun jeu de données trouvé pour "${q}" dans le catalogue de Bercy.</div>`;
+          return;
+        }
+
+        data.datasets.forEach(ds => {
+          const card = document.createElement('div');
+          card.className = "bg-slate-50/70 border border-slate-200/80 rounded-2xl p-4 flex flex-col justify-between hover:shadow-md hover:border-indigo-200 transition group";
+          
+          let resListHtml = '';
+          if (ds.resources && ds.resources.length > 0) {
+            resListHtml = ds.resources.slice(0, 3).map(r => `
+              <a href="${r.url}" target="_blank" class="text-[11px] px-2 py-1 rounded bg-white border border-slate-200 hover:border-indigo-400 hover:text-indigo-600 font-mono text-slate-600 flex items-center justify-between gap-1 transition">
+                <span class="truncate" title="${r.title}">${r.title}</span>
+                <span class="uppercase font-bold text-[9px] px-1 rounded bg-slate-100">${r.format}</span>
+              </a>
+            `).join('');
+          }
+
+          card.innerHTML = `
+            <div class="space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 truncate max-w-[200px]" title="${ds.organization_name || 'Bercy'}">
+                  ${ds.organization_name || 'Bercy / DGFiP'}
+                </span>
+                <span class="text-[11px] text-slate-400 font-mono shrink-0">${ds.resources_count} fichiers</span>
+              </div>
+              <h4 class="text-xs font-bold text-slate-900 group-hover:text-indigo-700 line-clamp-2 leading-snug">
+                ${ds.title}
+              </h4>
+              <p class="text-[11px] text-slate-500 line-clamp-3 leading-relaxed">
+                ${ds.description || 'Données ouvertes officielles certifiées par les Ministères Économiques et Financiers.'}
+              </p>
+            </div>
+
+            <div class="pt-3 mt-3 border-t border-slate-200/60 space-y-2">
+              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Téléchargement direct :</div>
+              <div class="flex flex-col gap-1">
+                ${resListHtml}
+              </div>
+              <div class="pt-1 flex items-center justify-between">
+                <a href="${ds.page_url || 'https://www.data.gouv.fr/datasets/' + ds.id}" target="_blank"
+                   class="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                  Fiche data.gouv.fr ↗
+                </a>
+              </div>
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+      } catch (err) {
+        loader.classList.add('hidden');
+        btn.disabled = false;
+        console.error("Erreur Bercy:", err);
+        showToast("Erreur lors de l'exploration du catalogue Bercy", "❌");
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadUserProfile();
+      loadCollectivities();
+      loadCommuneFinances('Bordeaux');
+      initBenchmarkPrompts();
+    });
+  </script>
+</body>
+</html>
