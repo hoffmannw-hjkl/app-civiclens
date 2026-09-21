@@ -53,6 +53,8 @@ def get_db_connection():
         user=DB_USER,
         password=password,
         sslmode="require",
+        connect_timeout=5,
+        options="-c statement_timeout=15000",
         cursor_factory=RealDictCursor
     )
     return conn

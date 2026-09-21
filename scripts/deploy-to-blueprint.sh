@@ -98,6 +98,7 @@ gcloud compute ssh "${BASTION_NAME}" \
         kubectl apply -f /tmp/backend-config.yaml
         kubectl apply -f /tmp/deployment.yaml
         kubectl apply -f /tmp/service.yaml
+        kubectl apply -f /tmp/pdb.yaml 2>/dev/null || true
         kubectl apply -f /tmp/ingress.yaml 2>/dev/null || true
         echo 'Pods en cours d'exécution :'
         kubectl get pods -n civiclens -o wide

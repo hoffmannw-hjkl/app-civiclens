@@ -16,8 +16,18 @@ spec:
         app: civiclens-api
     spec:
       serviceAccountName: civiclens-ksa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
       containers:
         - name: api
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           image: europe-west1-docker.pkg.dev/wh-djvagl/civiclens-repo/civiclens-api:latest
           imagePullPolicy: Always
           ports:
