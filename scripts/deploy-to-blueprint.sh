@@ -37,15 +37,15 @@ echo "========================================================================"
 
 # 1. Extraction des outputs Terraform du Blueprint
 echo "📋 1. Lecture des configurations Terraform du Blueprint..."
-PROJECT_ID=$(gcloud config get-value project 2>/dev/null)
+PROJECT_ID=$(terraform -chdir="${BLUEPRINT_DIR}" output -raw project_id 2>/dev/null || gcloud config get-value project 2>/dev/null)
 if [ -z "$PROJECT_ID" ]; then
     echo "❌ Erreur: gcloud project non défini."
     exit 1
 fi
 
 GKE_CLUSTER=$(terraform -chdir="${BLUEPRINT_DIR}" output -raw gke_cluster_name 2>/dev/null || echo "ai-demo-2e2m-gke")
-GKE_REGION=$(terraform -chdir="${BLUEPRINT_DIR}" output -raw gke_region 2>/dev/null || echo "europe-west1")
-GKE_SA=$(terraform -chdir="${BLUEPRINT_DIR}" output -raw gke_ai_service_account 2>/dev/null || echo "ai-demo-2e2m-gke-ai-sa@${PROJECT_ID}.iam.gserviceaccount.com")
+GKE_REGION=$(terraform -chdir="${BLUEPRINT_DIR}" output -raw region 2>/dev/null || terraform -chdir="${BLUEPRINT_DIR}" output -raw gke_region 2>/dev/null || echo "europe-west1")
+GKE_SA=$(terraform -chdir="${BLUEPRINT_DIR}" output -raw gke_app_service_account_email 2>/dev/null || terraform -chdir="${BLUEPRINT_DIR}" output -raw gke_ai_service_account 2>/dev/null || echo "ai-demo-2e2m-gke-ai-sa@${PROJECT_ID}.iam.gserviceaccount.com")
 BASTION_NAME=$(terraform -chdir="${BLUEPRINT_DIR}" output -raw bastion_name 2>/dev/null || echo "ai-demo-2e2m-bastion")
 BASTION_ZONE=$(terraform -chdir="${BLUEPRINT_DIR}" output -raw bastion_zone 2>/dev/null || echo "europe-west1-b")
 
@@ -71,9 +71,12 @@ rm -rf "$MANIFEST_DIR"
 mkdir -p "$MANIFEST_DIR"
 cp deploy/k8s/*.yaml "$MANIFEST_DIR/"
 
-sed -i "s|europe-west1-docker.pkg.dev/wh-djvagl/civiclens-repo/civiclens-api:latest|${IMAGE_URI}|g" "$MANIFEST_DIR/deployment.yaml"
-sed -i "s|ai-app-sa@wh-XXXXXX.iam.gserviceaccount.com|${GKE_SA}|g" "$MANIFEST_DIR/service-account.yaml"
+sed -i -E "s|image: .*/civiclens-api:.*|image: ${IMAGE_URI}|g" "$MANIFEST_DIR/deployment.yaml"
+sed -i -E "s|iam\.gke\.io/gcp-service-account:.*|iam.gke.io/gcp-service-account: \"${GKE_SA}\"|g" "$MANIFEST_DIR/service-account.yaml"
 sed -i "s|wh-djvagl|${PROJECT_ID}|g" "$MANIFEST_DIR/deployment.yaml"
+if [ -n "${DB_HOST:-}" ]; then
+    sed -i "s|value: \"10.238.0.2\"|value: \"${DB_HOST}\"|g" "$MANIFEST_DIR/deployment.yaml"
+fi
 
 # 4. Déploiement via le tunnel Bastion IAP
 echo "🚀 4. Application des manifests sur GKE Autopilot via Bastion IAP..."

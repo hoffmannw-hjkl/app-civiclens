@@ -24,7 +24,7 @@ Ce document explique comment déployer l'application **CivicLens** sur une infra
 │                                                                                        │
 │   Namespace: civiclens                                                                 │
 │   ┌────────────────────────────────────────────────────────────────────────────────┐   │
-│   │ Pod: civiclens-api (FastAPI + SvelteKit / Python 3.11)                         │   │
+│   │ Pod: civiclens-api (FastAPI + SPA Web / Python 3.11)                           │   │
 │   │                                                                                │   │
 │   │ Workload Identity KSA (civiclens-ksa) ──► GSA (${prefix}-gke-ai-sa)            │   │
 │   └───────────────────────┬───────────────────────────────┬────────────────────────┘   │
@@ -42,8 +42,11 @@ Ce document explique comment déployer l'application **CivicLens** sur une infra
 
 ## 📋 Prérequis
 
-1. **Infrastructure active** : Avoir déployé le [GCP AI Foundation Blueprint](https://github.com/cloud-gtm/gcp-ai-foundation-blueprint) dans votre projet Google Cloud.
-2. **Outils installés localement** :
+1. **Infrastructure de Base** : Avoir déployé le [GCP AI Foundation Blueprint](https://github.com/cloud-gtm/gcp-ai-foundation-blueprint) dans votre projet Google Cloud (cluster GKE Autopilot, VPC privé, Cloud Armor WAF, IAP).
+2. **Base de Données & Stockage Analytique** :
+   - **BigQuery Lakehouse** : Provisionné automatiquement par le Blueprint (`lakehouse_dataset_id`) pour les balances comptables OFGL et le Text-to-SQL.
+   - **Cloud SQL PostgreSQL (`pgvector`)** : Utilisé pour la recherche sémantique vectorielle sur les actes administratifs. Si une instance Cloud SQL n'est pas encore connectée au VPC (`DB_HOST`), l'API démarre avec un repli gracieux et s'appuie sur le Lakehouse BigQuery et les APIs de Bercy.
+3. **Outils installés localement** :
    - `gcloud` CLI (authentifié avec votre compte Google).
    - `kubectl` et `terraform` (v1.5+).
    - Droits `roles/container.developer` et `roles/iap.tunnelResourceAccessor`.
@@ -63,8 +66,8 @@ cd app-civiclens
 ```
 
 ### Ce que fait ce script :
-1. Extrait les sorties Terraform (`gke_cluster_name`, `gke_region`, `gke_ai_service_account`, `bastion_name`).
-2. Construit l'image Docker multi-plateforme via Google Cloud Build.
+1. Extrait les sorties Terraform (`project_id`, `region`, `gke_cluster_name`, `gke_app_service_account_email`, `bastion_name`, `bastion_zone`).
+2. Construit l'image Docker multi-plateforme via Google Cloud Build et la pousse vers Artifact Registry.
 3. Injecte les variables d'environnement dans les manifests Kubernetes (`deploy/k8s/`).
 4. Se connecte au cluster GKE privé via le tunnel sécurisé IAP du bastion.
 5. Applique les manifests (`kubectl apply`) et affiche l'état des Pods.
