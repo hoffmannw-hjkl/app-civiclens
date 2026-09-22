@@ -758,6 +758,37 @@ def chat_with_civic_rag(
     )
 
 
+# ------------------------------------------------------------------------------
+# Endpoints Multi-Agents Google ADK 2.0 (Swarm Finances Publiques & Audit Croisé)
+# ------------------------------------------------------------------------------
+from civic_swarm_adk import get_swarm_catalog, run_civic_swarm_audit
+
+
+@app.get("/api/agents/catalog")
+async def api_agents_catalog():
+    """Retourne le catalogue des 4 sous-agents spécialisés du Swarm CivicLens ADK 2.0."""
+    return get_swarm_catalog()
+
+
+@app.post("/api/agents/swarm-audit")
+async def api_agents_swarm_audit(
+    payload: ChatQuery,
+    user: UserContext = Depends(get_current_user),
+):
+    """
+    Exécute l'orchestration Multi-Agents ADK 2.0 :
+    SupervisorAgent -> BudgetSQLAgent -> DeliberationAuditorAgent -> CrossCheckAuditAgent.
+    """
+    result = run_civic_swarm_audit(
+        question=payload.question,
+        city=payload.city,
+        model=payload.model or "gemini-3.5-flash",
+    )
+    result["user"] = user.email
+    return result
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
