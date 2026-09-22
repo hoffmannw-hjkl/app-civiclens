@@ -72,5 +72,32 @@ Pour les instructions détaillées de déploiement manuel ou pas-à-pas, consult
 
 ---
 
+## 🤖 Architecture Agentique Dual-Layer (Swarm Google ADK 2.0 & M1L1 Skills)
+
+Ce dépôt implémente une architecture agentique à deux niveaux pour l'audit des finances publiques municipales (nomenclature M57) :
+
+### 1. Couche 2 (Runtime Production) — Swarm Multi-Agents Google ADK 2.0 (`civic_swarm_adk.py`)
+Exposé via les routes FastAPI **`GET /api/agents/catalog`** et **`POST /api/agents/swarm-audit`** :
+1. **`SupervisorAgent` (Orchestrateur Principal)** : Analyse l'intention citoyenne ou d'audit financier et route dynamiquement vers les sous-agents spécialisés.
+2. **`BudgetSQLAgent` (Analyste Comptable M57 & BigQuery)** : Génère et exécute des requêtes SQL en lecture seule (`SELECT`/`WITH`) sur le Lakehouse BigQuery (`civic_budget_lakehouse.m57_budget_lines`) et les données OFGL, en distinguant Section de Fonctionnement (`011`, `012`, `65`) et Section d'Investissement (`20`, `21`, `23`).
+3. **`DeliberationAuditorAgent` (Auditeur Sémantique `pgvector` & Open Data Bercy)** : Recherche les délibérations municipales et arrêtés votés en Conseil Municipal via recherche vectorielle (`text-embedding-004`).
+4. **`CrossCheckAuditAgent` (Contrôleur de Conformité Croisée)** : Croise les engagements votés en délibération (PDF) avec les mandats effectivement exécutés en comptabilité M57 (SQL) et calcule un **Score de Conformité Budgétaire (`/100`)**.
+
+### 2. Couche 1 (Ingénierie Assistée par IA) — Sous-Agents & Skill M1L1 (`.agents/`)
+Découverts automatiquement par **Jetski**, **Antigravity** et **Gemini CLI** (voir [`AGENTS.md`](AGENTS.md)) :
+- **Sous-Agents spécialisés (`.agents/agents/`)** :
+  - **[`data-governance-steward`](.agents/agents/data-governance-steward.md)** : Gouvernance BigQuery Lakehouse, comptabilité publique française M57, indexation `pgvector` et conformité RGPD.
+  - **[`fastapi-adk-architect`](.agents/agents/fastapi-adk-architect.md)** : Orchestration multi-agents Google ADK 2.0, routes FastAPI SSE et sécurité GKE Workload Identity.
+- **Skill Procédural M1L1 (`civiclens-verification`)** :
+  - **Référence** : [`.agents/skills/civiclens-verification/SKILL.md`](.agents/skills/civiclens-verification/SKILL.md)
+  - **Script Gatekeeper (`verify.sh`)** :
+    ```bash
+    ./.agents/skills/civiclens-verification/scripts/verify.sh
+    ```
+    Vérifie la compilation Python (`py_compile`), l'intégrité du Swarm ADK 2.0 (`4 agents`), l'alignement des manifestes GKE Autopilot (`deploy/gke/civiclens-manifest.yaml`) et nettoie les caches `__pycache__` avant commit.
+
+---
+
 ## 📄 Licence
 Apache License 2.0. Voir [LICENSE](LICENSE) pour plus d'informations.
+

@@ -72,5 +72,32 @@ For step-by-step manual deployment instructions, refer to the **[Deployment Guid
 
 ---
 
+## 🤖 Dual-Layer Agentic Architecture (Google ADK 2.0 Swarm & M1L1 Skills)
+
+This repository implements a two-tier Agentic AI architecture for municipal public finance auditing (French M57 accounting standard):
+
+### 1. Layer 2 (Production Runtime) — Google ADK 2.0 Multi-Agent Swarm (`civic_swarm_adk.py`)
+Exposed via FastAPI endpoints **`GET /api/agents/catalog`** and **`POST /api/agents/swarm-audit`**:
+1. **`SupervisorAgent` (Lead Orchestrator)**: Analyzes citizen or auditor intent and dynamically routes tasks across specialized subagents.
+2. **`BudgetSQLAgent` (M57 Accounting & BigQuery Analyst)**: Generates and executes read-only SQL queries (`SELECT`/`WITH`) against the BigQuery Lakehouse (`civic_budget_lakehouse.m57_budget_lines`) and OFGL datasets, strictly separating Operating (`011`, `012`, `65`) vs Investment (`20`, `21`, `23`) budget chapters.
+3. **`DeliberationAuditorAgent` (`pgvector` & Bercy Open Data Auditor)**: Retrieves municipal council deliberations and legal decrees via semantic vector search (`text-embedding-004`).
+4. **`CrossCheckAuditAgent` (Cross-Examination Compliance Auditor)**: Cross-examines voted council resolutions (PDF) against actual executed budget lines (SQL) and computes a **Budget Compliance Score (`/100`)**.
+
+### 2. Layer 1 (AI-Assisted Engineering) — Repo Subagents & M1L1 Skill (`.agents/`)
+Automatically discovered by **Jetski**, **Antigravity**, and **Gemini CLI** (see [`AGENTS.md`](AGENTS.md)):
+- **Specialized Subagents (`.agents/agents/`)**:
+  - **[`data-governance-steward`](.agents/agents/data-governance-steward.md)**: BigQuery Lakehouse schema governance, French M57 municipal accounting rules, `pgvector` indexing, and GDPR compliance.
+  - **[`fastapi-adk-architect`](.agents/agents/fastapi-adk-architect.md)**: Google ADK 2.0 multi-agent orchestration, FastAPI SSE routes, and GKE Workload Identity bindings.
+- **M1L1 Procedural Skill (`civiclens-verification`)**:
+  - **Reference**: [`.agents/skills/civiclens-verification/SKILL.md`](.agents/skills/civiclens-verification/SKILL.md)
+  - **Automated Gatekeeper Script (`verify.sh`)**:
+    ```bash
+    ./.agents/skills/civiclens-verification/scripts/verify.sh
+    ```
+    Validates Python syntax compilation (`py_compile`), verifies the 4-agent ADK 2.0 Swarm, checks GKE Autopilot manifest alignment (`deploy/gke/civiclens-manifest.yaml`), and cleans up `__pycache__` artifacts before git commits.
+
+---
+
 ## 📄 License
 Apache License 2.0. See [LICENSE](LICENSE) for more details.
+
