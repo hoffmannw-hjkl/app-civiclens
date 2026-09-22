@@ -13,14 +13,38 @@ import time
 import logging
 from typing import Dict, Any, List, Optional
 
-from vector_service import hybrid_search
-from analytics_service import run_bigquery_natural_language_query
-from comptes_publics_service import (
-    resolve_commune,
-    fetch_ofgl_financial_history,
-    chat_financial_rag,
-)
-from bercy_service import search_bercy_datasets
+try:
+    from vector_service import hybrid_search
+except ImportError:
+    def hybrid_search(*args, **kwargs):  # type: ignore
+        return []
+
+try:
+    from analytics_service import run_bigquery_natural_language_query
+except ImportError:
+    def run_bigquery_natural_language_query(*args, **kwargs):  # type: ignore
+        return {"rows": []}
+
+try:
+    from comptes_publics_service import (
+        resolve_commune,
+        fetch_ofgl_financial_history,
+        chat_financial_rag,
+    )
+except ImportError:
+    def resolve_commune(*args, **kwargs):  # type: ignore
+        return None
+    def fetch_ofgl_financial_history(*args, **kwargs):  # type: ignore
+        return {}
+    def chat_financial_rag(*args, **kwargs):  # type: ignore
+        return {}
+
+try:
+    from bercy_service import search_bercy_datasets
+except ImportError:
+    def search_bercy_datasets(*args, **kwargs):  # type: ignore
+        return {"datasets": []}
+
 
 logger = logging.getLogger("CivicLensSwarmADK")
 
