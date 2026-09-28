@@ -80,30 +80,54 @@ For step-by-step manual deployment instructions, refer to the **[Deployment Guid
 
 ## 🤖 Dual-Layer Agentic Architecture (Google ADK 2.0 Swarm & M1L1 Skills)
 
-This repository implements a two-tier Agentic AI architecture for municipal public finance auditing (French M57 accounting standard):
+This repository implements a **two-tier complementary Agentic AI architecture** for municipal public finance auditing (French M57 accounting standard):
+- 🚀 **Layer 2 (Production Run-Time)**: A **4-Agent Google ADK 2.0 Swarm** (`src/backend/civic_swarm_adk.py`), exposed via FastAPI (`/api/agents/catalog` and `/api/agents/swarm-audit`) to cross-examine municipal budgets in real time.
+- 🛠️ **Layer 1 (Engineering Build-Time)**: **2 Specialized Subagents and 1 M1L1 Skill** (`.agents/`), automatically discovered in the IDE/CLI to enforce M57/BigQuery data governance and GKE Workload Identity security.
 
-### 1. Layer 2 (Production Runtime) — Google ADK 2.0 Multi-Agent Swarm (`civic_swarm_adk.py`)
-Exposed via FastAPI endpoints **`GET /api/agents/catalog`** and **`POST /api/agents/swarm-audit`**:
-1. **`SupervisorAgent` (Lead Orchestrator)**: Analyzes citizen or auditor intent and dynamically routes tasks across specialized subagents.
-2. **`BudgetSQLAgent` (M57 Accounting & BigQuery Analyst)**: Generates and executes read-only SQL queries (`SELECT`/`WITH`) against the BigQuery Lakehouse (`civic_budget_lakehouse.m57_budget_lines`) and OFGL datasets, strictly separating Operating (`011`, `012`, `65`) vs Investment (`20`, `21`, `23`) budget chapters.
-3. **`DeliberationAuditorAgent` (`pgvector` & Bercy Open Data Auditor)**: Retrieves municipal council deliberations and legal decrees via semantic vector search (`text-embedding-004`).
-4. **`CrossCheckAuditAgent` (Cross-Examination Compliance Auditor)**: Cross-examines voted council resolutions (PDF) against actual executed budget lines (SQL) and computes a **Budget Compliance Score (`/100`)**.
+### 🔄 Orchestration Diagram: How the 4 ADK 2.0 Agents Enter into Action
 
-### 2. Layer 1 (AI-Assisted Engineering) — Repo Subagents & M1L1 Skill (`.agents/`)
-Automatically discovered by **Jetski**, **Antigravity**, and **Gemini CLI** (see [`AGENTS.md`](AGENTS.md)):
-- **Specialized Subagents (`.agents/agents/`)**:
-  - **[`data-governance-steward`](.agents/agents/data-governance-steward.md)**: BigQuery Lakehouse schema governance, French M57 municipal accounting rules, `pgvector` indexing, and GDPR compliance.
-  - **[`fastapi-adk-architect`](.agents/agents/fastapi-adk-architect.md)**: Google ADK 2.0 multi-agent orchestration, FastAPI SSE routes, and GKE Workload Identity bindings.
-- **M1L1 Procedural Skill (`civiclens-verification`)**:
-  - **Reference**: [`.agents/skills/civiclens-verification/SKILL.md`](.agents/skills/civiclens-verification/SKILL.md)
-  - **Automated Gatekeeper Script (`verify.sh`)**:
-    ```bash
-    ./.agents/skills/civiclens-verification/scripts/verify.sh
-    ```
-    Validates Python syntax compilation (`py_compile`), verifies the 4-agent ADK 2.0 Swarm, checks GKE Autopilot manifest alignment (`deploy/gke/civiclens-manifest.yaml`), and cleans up `__pycache__` artifacts before git commits.
+When a citizen or financial auditor submits a cross-audit request to `POST /api/agents/swarm-audit`, the **Google ADK 2.0 Swarm** executes the following workflow:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Auditor as 👤 Citizen / Auditor
+    participant API as ⚡ FastAPI (/api/agents/swarm-audit)
+    participant Sup as 🎯 1. SupervisorAgent
+    participant SQL as 📊 2. BudgetSQLAgent (M57 / BigQuery)
+    participant RAG as 📜 3. DeliberationAuditorAgent (pgvector)
+    participant Cross as ⚖️ 4. CrossCheckAuditAgent
+
+    Auditor->>API: POST {"query": "Audit subsidies and green investments...", "commune": "Bordeaux", "exercice": 2024}
+    API->>Sup: Initializes ADK 2.0 session & parses intent
+    par M57 Accounting Extraction (Read-Only SQL)
+        Sup->>SQL: Queries M57 chapters (011/012/65 vs 20/21/23)
+        SQL-->>Sup: Executed budget lines (BigQuery Lakehouse / OFGL)
+    and Semantic Deliberation Search (PDF)
+        Sup->>RAG: HNSW vector search (text-embedding-004)
+        RAG-->>Sup: Voted municipal council resolutions & Bercy datasets
+    end
+    Sup->>Cross: Passes [Executed SQL Budget] + [Voted PDF Resolutions]
+    Cross->>Cross: Cross-examines Voted vs Executed & detects M57 variances
+    Cross-->>API: Executive synthesis + Compliance Score (/100) + 4-agent trace
+    API-->>Auditor: Structured JSON response (agent_traces + compliance_score)
+```
+
+### 📊 Summary Matrix: Where and How Each Agent Operates
+
+| Agent / Skill | Layer | Where does it live? | How / When does it enter into action? | Role & Added Value |
+| :--- | :--- | :--- | :--- | :--- |
+| **`SupervisorAgent`** | **Layer 2** *(Run-Time)* | `src/backend/civic_swarm_adk.py` | **Step 1** upon receiving a `POST /api/agents/swarm-audit` request. | Analyzes citizen/auditor intent, extracts target municipality and fiscal year, and orchestrates specialist subagents. |
+| **`BudgetSQLAgent`** | **Layer 2** *(Run-Time)* | `src/backend/civic_swarm_adk.py` | **Step 2** invoked by `SupervisorAgent`. | Generates and executes **strictly read-only SQL (`SELECT`/`WITH`)** on BigQuery/OFGL, separating Operating (`011, 012, 65`) vs Investment (`20, 21, 23`) chapters. |
+| **`DeliberationAuditorAgent`** | **Layer 2** *(Run-Time)* | `src/backend/civic_swarm_adk.py` | **Step 3** in parallel or sequence with `BudgetSQLAgent`. | Searches municipal council PDFs (`pgvector`) and Bercy Open Data to extract voted commitments. |
+| **`CrossCheckAuditAgent`** | **Layer 2** *(Run-Time)* | `src/backend/civic_swarm_adk.py` | **Step 4** for compliance synthesis and scoring. | Cross-examines voted PDF resolutions against executed M57 SQL lines and computes a **Budget Compliance Score (`/100`)**. |
+| **[`data-governance-steward`](.agents/agents/data-governance-steward.md)** | **Layer 1** *(Build-Time)* | `.agents/agents/data-governance-steward.md` | Inside **Jetski / Antigravity / Gemini CLI** when writing M57 SQL queries or modifying BigQuery/`pgvector` schemas. | Prevents mixing M57 operating and investment chapters, verifies BigQuery partitioning, and enforces GDPR anonymization. |
+| **[`fastapi-adk-architect`](.agents/agents/fastapi-adk-architect.md)** | **Layer 1** *(Build-Time)* | `.agents/agents/fastapi-adk-architect.md` | Inside **Jetski / Antigravity / Gemini CLI** when updating `main.py`, `civic_swarm_adk.py`, or GKE manifests. | Audits Google ADK 2.0 orchestration, Pydantic schemas, and keyless **GKE Workload Identity** bindings. |
+| **[`civiclens-verification`](.agents/skills/civiclens-verification/SKILL.md)** | **Layer 1** *(Gatekeeper)* | `.agents/skills/civiclens-verification/scripts/verify.sh` | Executed in the terminal before every `git commit` or GKE deployment. | Compiles all Python files (`py_compile`), verifies the 4 ADK 2.0 agents, checks K8s manifests, and cleans up `__pycache__`. |
 
 ---
 
 ## 📄 License
 Apache License 2.0. See [LICENSE](LICENSE) for more details.
+
 
