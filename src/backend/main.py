@@ -53,8 +53,11 @@ class UserContext(BaseModel):
 
 
 class ChatQuery(BaseModel):
-    question: str
+    question: Optional[str] = None
+    query: Optional[str] = None
     city: Optional[str] = None
+    commune: Optional[str] = None
+    exercice: Optional[int] = 2024
     theme: Optional[str] = None
     model: Optional[str] = "gemini-3.6-flash"
     min_amount: Optional[float] = None
@@ -680,13 +683,15 @@ def search_deliberations_rag(
     user: UserContext = Depends(get_current_user)
 ):
     """Recherche hybride (Sémantique pgvector + SQL) dans les délibérations."""
-    logger.info(f"Recherche lancée par '{user.email}' : {payload.question}")
+    q_text = (payload.question or payload.query or "").strip()
+    c_text = payload.city or payload.commune
+    logger.info(f"Recherche lancée par '{user.email}' : {q_text}")
     try:
         with get_db_connection() as conn:
             results = hybrid_search(
-                query_text=payload.question,
+                query_text=q_text,
                 conn=conn,
-                city=payload.city,
+                city=c_text,
                 theme=payload.theme,
                 min_amount=payload.min_amount,
                 max_amount=payload.max_amount,
@@ -708,6 +713,8 @@ def chat_with_civic_rag(
     user: UserContext = Depends(get_current_user)
 ):
     """Génération de réponse RAG citoyenne avec citations explicites (Comptes Publics + Bercy)."""
+    payload.question = (payload.question or payload.query or "").strip()
+    payload.city = payload.city or payload.commune
     logger.info(f"Question Chat RAG de '{user.email}' : {payload.question}")
 
     # 1. Résolution de la commune cible (depuis le payload ou détectée dans la question)
@@ -779,9 +786,11 @@ async def api_agents_swarm_audit(
     Exécute l'orchestration Multi-Agents ADK 2.0 :
     SupervisorAgent -> BudgetSQLAgent -> DeliberationAuditorAgent -> CrossCheckAuditAgent.
     """
+    effective_question = (payload.question or payload.query or "Audit de conformité budgétaire M57 et délibérations").strip()
+    effective_city = (payload.city or payload.commune or "Bordeaux").strip()
     result = run_civic_swarm_audit(
-        question=payload.question,
-        city=payload.city,
+        question=effective_question,
+        city=effective_city,
         model=payload.model or "gemini-3.5-flash",
     )
     result["user"] = user.email
