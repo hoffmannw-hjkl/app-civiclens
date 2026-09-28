@@ -125,9 +125,41 @@ sequenceDiagram
 | **[`fastapi-adk-architect`](.agents/agents/fastapi-adk-architect.md)** | **Couche 1** *(Build-Time)* | `.agents/agents/fastapi-adk-architect.md` | Dans **Jetski / Antigravity / Gemini CLI** lors de l'évolution de `main.py`, `civic_swarm_adk.py` ou des manifests GKE. | Audite l'orchestration Google ADK 2.0, le typage Pydantic et les liaisons **GKE Workload Identity** (zéro clé JSON). |
 | **[`civiclens-verification`](.agents/skills/civiclens-verification/SKILL.md)** | **Couche 1** *(Gatekeeper)* | `.agents/skills/civiclens-verification/scripts/verify.sh` | Exécuté dans le terminal avant chaque `git commit` ou déploiement GKE. | Compile tous les fichiers Python (`py_compile`), vérifie l'intégrité des 4 agents ADK 2.0, contrôle les manifests K8s et purge les `__pycache__`. |
 
+### 🎬 Playbook de Démo Live : Déclencher le Swarm ADK 2.0 en Direct
+
+1. **Étape 1 — Inspecter le Catalogue des 4 Agents ADK 2.0 (`GET /api/agents/catalog`)** :
+   - Depuis le portail Swagger (**`/docs`**) ou en ligne de commande :
+     ```bash
+     curl -s http://localhost:8000/api/agents/catalog | jq .
+     ```
+   - Retourne la topologie `google-adk-2.0`, la liste des 4 agents (`SupervisorAgent`, `BudgetSQLAgent`, `DeliberationAuditorAgent`, `CrossCheckAuditAgent`) et leurs outils associés.
+
+2. **Étape 2 — Lancer un Audit Budgétaire Croisé M57 (`POST /api/agents/swarm-audit`)** :
+   ```bash
+   curl -s -X POST http://localhost:8000/api/agents/swarm-audit \
+     -H "Content-Type: application/json" \
+     -d '{
+       "query": "Vérifie la conformité entre les subventions votées en conseil municipal et les dépenses exécutées au chapitre 65",
+       "commune": "Bordeaux",
+       "exercice": 2024
+     }' | jq .
+   ```
+   - **Ce qu'il faut montrer dans la réponse JSON** :
+     - Le tableau `agent_traces` détaillant l'action séquentielle des **4 agents** (`status: completed`, requête SQL M57 générée, délibérations trouvées).
+     - L'indicateur `compliance_score` (`/100`) et le rapport exécutif généré par Gemini.
+
+3. **Étape 3 — Démontrer les Agents d'Ingénierie & le Gatekeeper M1L1 (IDE / CLI)** :
+   - Dans **Jetski / Antigravity / Gemini CLI**, copiez-collez :
+     > `"Invoque data-governance-steward pour vérifier que les requêtes SQL de BudgetSQLAgent dans src/backend/civic_swarm_adk.py séparent strictement les chapitres M57 de fonctionnement (011, 012, 65) et d'investissement (20, 21, 23)."`
+   - Puis lancez le script gatekeeper M1L1 :
+     ```bash
+     ./.agents/skills/civiclens-verification/scripts/verify.sh
+     ```
+
 ---
 
 ## 📄 Licence
 Apache License 2.0. Voir [LICENSE](LICENSE) pour plus d'informations.
+
 
 
