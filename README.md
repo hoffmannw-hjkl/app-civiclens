@@ -21,6 +21,7 @@ Plateforme d'Intelligence Artificielle citoyenne et d'aide à la décision publi
 - **Benchmark & Duel de Communes :** Comparaison côte-à-côte avec arbitrage stratégique impartial rédigé par **Gemini 2.5 Flash / Pro**.
 - **Data Lakehouse BigQuery Text-to-SQL :** Requêtage analytique en langage naturel directement traduit en GoogleSQL sécurisé avec garde-fou anti-surcoût (100 Mo max scan).
 - **Recherche Sémantique Hybride & RAG :** Base vectorielle PostgreSQL (`pgvector` avec index HNSW) couplée aux modèles d'embedding Google Cloud (`text-embedding-005`).
+- **Swarm d'Audit Multi-Agents (Google ADK 2.0) :** Orchestration de 4 agents spécialisés (`SupervisorAgent`, `BudgetSQLAgent`, `DeliberationAuditorAgent`, `CrossCheckAuditAgent`) croisant le budget voté en délibération (PDF) avec le budget exécuté en comptabilité M57 (SQL).
 
 ---
 
@@ -28,8 +29,13 @@ Plateforme d'Intelligence Artificielle citoyenne et d'aide à la décision publi
 
 ```text
 app-civiclens/
-├── src/                           # 🧠 Code Source Applicatif
-│   ├── backend/                   # API FastAPI (RAG, Gemini, BigQuery Lakehouse, pgvector)
+├── .agents/                       # 🤖 Architecture Agentique Couche 1 (Ingénierie & M1L1 Skills)
+│   ├── agents/                    # Sous-agents : data-governance-steward, fastapi-adk-architect
+│   └── skills/                    # Skill M1L1 : civiclens-verification (SKILL.md + scripts/verify.sh)
+├── AGENTS.md                      # Point d'entrée de découverte automatique (Jetski / Antigravity / Gemini CLI)
+│
+├── src/                           # 🧠 Code Source Applicatif (Couche 2 Runtime)
+│   ├── backend/                   # API FastAPI (main.py) & Swarm ADK 2.0 (civic_swarm_adk.py)
 │   ├── frontend/                  # Interface web citoyenne & explorateur
 │   ├── ingestion/                 # Pipeline Open Data (data.gouv.fr) & analyse vision PDF
 │   └── Dockerfile                 # Image multi-stage optimisée (Python 3.11-slim)

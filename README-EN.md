@@ -21,6 +21,7 @@ Citizen Artificial Intelligence & public decision-support platform on Google Clo
 - **Territorial Duel & Benchmark:** Side-by-side comparison with impartial strategic arbitration powered by **Gemini 2.5 Flash / Pro**.
 - **BigQuery AI Lakehouse & Text-to-SQL:** Natural language queries compiled to GoogleSQL with zero-spill safeguards (100 MB max scan limit).
 - **Hybrid Semantic Search & RAG:** Vector database with PostgreSQL (`pgvector` HNSW indexing) and Google Cloud embeddings (`text-embedding-005`).
+- **Google ADK 2.0 Multi-Agent Audit Swarm:** Orchestration of 4 specialized agents (`SupervisorAgent`, `BudgetSQLAgent`, `DeliberationAuditorAgent`, `CrossCheckAuditAgent`) cross-examining voted municipal council resolutions (PDF) against executed M57 budget lines (SQL).
 
 ---
 
@@ -28,8 +29,13 @@ Citizen Artificial Intelligence & public decision-support platform on Google Clo
 
 ```text
 app-civiclens/
-├── src/                           # 🧠 Application Source Code
-│   ├── backend/                   # FastAPI service (RAG, Gemini, BigQuery Lakehouse, pgvector)
+├── .agents/                       # 🤖 Layer 1 Agentic Engineering (Subagents & M1L1 Skills)
+│   ├── agents/                    # Subagents: data-governance-steward, fastapi-adk-architect
+│   └── skills/                    # M1L1 Skill: civiclens-verification (SKILL.md + scripts/verify.sh)
+├── AGENTS.md                      # Auto-discovery index for Jetski, Antigravity & Gemini CLI
+│
+├── src/                           # 🧠 Application Source Code (Layer 2 Production Runtime)
+│   ├── backend/                   # FastAPI service (main.py) & ADK 2.0 Swarm (civic_swarm_adk.py)
 │   ├── frontend/                  # Web UI & citizen explorer
 │   ├── ingestion/                 # Open Data ingestion pipeline & PDF vision analysis
 │   └── Dockerfile                 # Multi-stage optimized Docker build (Python 3.11-slim)
