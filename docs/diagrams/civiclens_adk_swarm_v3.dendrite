@@ -1,0 +1,189 @@
+renderOrder: nodes-first
+direction: down
+
+const GcpBlue = "#1a73e8"
+const GcpGreen = "#1e8e3e"
+const EmeraldTeal = "#0d9488"
+const DarkSlate = "#202124"
+const SubText = "#5f6368"
+const CardBorder = "#dadce0"
+const BusStroke = "#334155"
+const SurfaceWhite = "#ffffff"
+
+Style @Ghost {
+  fill: transparent, strokeWidth: 0, fontColor: transparent, padding: 0
+}
+Style @ArchitectureRoot {
+  fill: "#f8fafd", strokeColor: "#c2d7f5", strokeWidth: 1.5, borderRadius: 16,
+  padding: 22, gap: 18, fontColor: "#3c4043", fontSize: 22, labelWeight: bold,
+  icon: "GoogleCloud", iconSize: 28
+}
+Style @PerimeterZone {
+  fill: "#e8f0fe", strokeColor: "#8ab4f8", strokeWidth: 1.5, borderRadius: 12,
+  padding: 16, gap: 16, fontColor: $DarkSlate, fontSize: 15, labelWeight: bold
+}
+Style @ExecutionZone {
+  fill: "#f3e8fd", strokeColor: "#c084fc", strokeWidth: 1.5, borderRadius: 12,
+  padding: 16, gap: 16, fontColor: $DarkSlate, fontSize: 15, labelWeight: bold
+}
+Style @GovernanceZone {
+  fill: "#e6f4ea", strokeColor: "#81c995", strokeWidth: 1.5, borderRadius: 12,
+  padding: 16, gap: 14, fontColor: $DarkSlate, fontSize: 15, labelWeight: bold
+}
+Style @ResourceZone {
+  fill: "#fef7e0", strokeColor: "#fde293", strokeWidth: 1.5, borderRadius: 12,
+  padding: 16, gap: 16, fontColor: $DarkSlate, fontSize: 15, labelWeight: bold
+}
+Style @PurpleSubGroup {
+  fill: "#e9d5ff", strokeColor: darken("#e9d5ff", 14), strokeWidth: 1, borderRadius: 10,
+  padding: 12, gap: 10, fontColor: $DarkSlate, fontSize: 13, labelWeight: bold
+}
+Style @GreenSubGroup {
+  fill: "#ceead6", strokeColor: darken("#ceead6", 14), strokeWidth: 1, borderRadius: 10,
+  padding: 10, gap: 7, fontColor: $DarkSlate, fontSize: 13, labelWeight: bold
+}
+Style @AmberSubGroup {
+  fill: "#f9e4a7", strokeColor: darken("#f9e4a7", 14), strokeWidth: 1, borderRadius: 10,
+  padding: 12, gap: 12, fontColor: $DarkSlate, fontSize: 13, labelWeight: bold
+}
+Style @ActorCard {
+  width: 182, height: 56,
+  fill: $SurfaceWhite, strokeColor: $CardBorder, strokeWidth: 1, borderRadius: 8,
+  fontColor: $DarkSlate, subFontColor: $SubText,
+  fontSize: 14, subFontSize: 11, labelWeight: bold,
+  textAlign: "left", textVAlign: "middle",
+  iconPosition: "left", iconSize: 28, padding: 10, shadow: true
+}
+Style @ProductCard {
+  width: 170, height: 58,
+  fill: $SurfaceWhite, strokeColor: $CardBorder, strokeWidth: 1, borderRadius: 8,
+  fontColor: $DarkSlate, subFontColor: $SubText,
+  fontSize: 13.5, subFontSize: 10.5, labelWeight: bold,
+  textAlign: "left", textVAlign: "middle",
+  iconPosition: "left", iconSize: 26, padding: 10, shadow: true
+}
+Style @GatewayHubCard {
+  base: @ProductCard,
+  width: 198, height: 66, strokeColor: "#7c3aed", strokeWidth: 2,
+  fontSize: 14.5, subFontSize: 11, iconSize: 30, padding: 12
+}
+Style @PolicyPill {
+  width: 234, height: 32,
+  fill: $SurfaceWhite, strokeColor: "#9aa0a6", strokeWidth: 1, borderRadius: 16,
+  fontColor: $DarkSlate, fontSize: 12.5, labelWeight: bold,
+  textAlign: "left", textVAlign: "middle",
+  iconPosition: "left", iconSize: 16, padding: 10, shadow: true
+}
+
+Zone @CivicLens_Platform {
+  title: "CivicLens — Public Finance M57 Observatory & Google ADK 2.0 Multi-Agent Swarm"
+  style: @ArchitectureRoot
+  layout: matrix
+  areas: [
+    "z1 z1 z1 z1 z1",
+    "z3 z3 z3 z2 z2",
+    "z4 z4 z4 z4 z4"
+  ]
+  sizes: ["1.05fr", "1.05fr", "1.05fr", "0.92fr", "0.92fr"]
+  gap: 20
+
+  Zone @Zone1_Ingress {
+    area: "z1"
+    title: "1. Citizen & Municipal Perimeter (Zero-Trust Edge & IAP)"
+    style: @PerimeterZone
+    layout: row, gap: 18, align: center, justify: center
+    [citizens_mayors: "Citizens & Mayors" | "35,000 Municipalities"] { style: @ActorCard, icon: "Users" }
+    [cl_armor_waf: "Cloud Armor WAF" | "Adaptive DDoS & OWASP"] { style: @ProductCard, width: 186, icon: "CloudArmor" }
+    [cl_https_lb: "Global HTTPS LB" | "Managed SSL Ingress"] { style: @ProductCard, width: 186, icon: "CloudLoadBalancing" }
+    [cl_iap_auth: "Identity-Aware Proxy" | "Cryptographic JWT Header"] { style: @ProductCard, width: 192, icon: "GoogleIdentity" }
+    [cl_web_ui: "CivicLens 5-Tab UI" | "Observatory • BigQuery • Swarm"] { style: @ProductCard, width: 198, icon: "Laptop" }
+  }
+
+  Zone @Zone3_GKE_Swarm {
+    area: "z3"
+    title: "2. GKE Autopilot Runtime & Google ADK 2.0 4-Agent Swarm (Workload Identity)"
+    style: @ExecutionZone
+    layout: row, gap: 34, align: center, justify: center
+
+    [supervisor_agent: "1. SupervisorAgent\n(ADK Orchestrator)" | "Intent & Task Router"] {
+      style: @GatewayHubCard, icon: "GoogleAgents",
+      description: "Classifies civic & M57 accounting intent and delegates to specialized subagents"
+    }
+
+    Zone @SpecialistAgentsCol {
+      style: @Ghost, layout: column, gap: 12, align: stretch
+
+      Zone @DataRetrievalAgents {
+        title: "Parallel Quantitative & Legal Retrieval Subagents"
+        style: @PurpleSubGroup, width: 376, layout: row, gap: 12, align: center, justify: center
+        [budget_sql_agent: "2. BudgetSQLAgent" | "M57 BigQuery + OFGL"] { style: @ProductCard, width: 174, icon: "BigQuery" }
+        [delib_auditor_agent: "3. DeliberationAuditor" | "pgvector PDF + Bercy"] { style: @ProductCard, width: 174, icon: "Search" }
+      }
+
+      Zone @SynthesisAuditAgent {
+        title: "Cross-Examination & Official Report Generation"
+        style: @PurpleSubGroup, dashed: true, width: 376, layout: row, gap: 12, align: center, justify: center
+        [crosscheck_agent: "4. CrossCheckAudit" | "Voted PDF vs. Executed SQL"] { style: @ProductCard, width: 174, icon: "ShieldCheck" }
+        [pdf_report_gen: "M57 PDF & Score /100" | "ReportLab + FinOps Badge"] { style: @ProductCard, width: 174, icon: "BarChart3" }
+      }
+    }
+  }
+
+  Zone @Zone2_Governance {
+    area: "z2"
+    title: "3. M57 Data Governance & Sovereign Guardrails"
+    style: @GovernanceZone
+    layout: row, gap: 20, align: center, justify: center
+
+    Zone @M57Guardrails {
+      title: "M57 Accounting & Security Rules"
+      style: @GreenSubGroup, layout: column, gap: 8, align: center
+      [rule_readonly: "BigQueryToolset SELECT-Only"] { style: @PolicyPill, icon: "Lock" }
+      [rule_m57_sep: "M57 Op (011/012/65) vs Inv (20/21)"] { style: @PolicyPill, icon: "ShieldCheck" }
+      [rule_wi: "Keyless GKE Workload Identity"] { style: @PolicyPill, icon: "GoogleIdentity" }
+      [rule_rgpd: "GDPR Anonymization & WORM DR"] { style: @PolicyPill, icon: "SecurityCommandCenter" }
+    }
+  }
+
+  Zone @Zone4_Lakehouse {
+    area: "z4"
+    title: "4. Sovereign Data Lakehouse, Hybrid Vector Store & National Open Data APIs"
+    style: @ResourceZone
+    layout: matrix, cols: 3, sizes: ["1.05fr", "1.1fr", "0.95fr"], gap: 18, align: center
+
+    Zone @StructuredFinanceStore {
+      title: "Structured M57 Accounting Lakehouse"
+      style: @AmberSubGroup, layout: row, gap: 12, align: center, justify: center
+      [bq_m57_lakehouse: "BigQuery Lakehouse" | "civiclens_finances (M57)"] { style: @ProductCard, width: 176, icon: "BigQuery" }
+      [bercy_ofgl_api: "DGFiP / OFGL & Bercy" | "650+ Open Data Datasets"] { style: @ProductCard, width: 178, icon: "Globe" }
+    }
+
+    Zone @UnstructuredVectorStore {
+      title: "Council Deliberations & Multimodal RAG"
+      style: @AmberSubGroup, layout: row, gap: 12, align: center, justify: center
+      [cloudsql_pgvector: "Cloud SQL PG 16" | "pgvector HNSW (768d)"] { style: @ProductCard, width: 174, icon: "CloudSQL" }
+      [gcs_pdf_vault: "Cloud Storage Vault" | "Council PDF Acts"] { style: @ProductCard, width: 170, icon: "GcpStorageBucket" }
+    }
+
+    Zone @VertexAndBackup {
+      title: "Vertex AI & Immutable DR"
+      style: @AmberSubGroup, layout: row, gap: 12, align: center, justify: center
+      [vertex_gemini_cl: "Vertex AI Gemini 3.5" | "Text-to-SQL & Embeddings"] { style: @ProductCard, width: 178, icon: "VertexAI" }
+      [backup_dr_cl: "Backup & DR Service" | "Multi-Region WORM Vault"] { style: @ProductCard, width: 174, icon: "SecurityCommandCenter" }
+    }
+  }
+}
+
+[citizens_mayors] --> [cl_armor_waf] { color: $GcpBlue, strokeWidth: 2, sourceAnchor: "right", targetAnchor: "left", curve: "step", sequenceBadge: "1", badgeFill: $GcpBlue, badgeFontColor: $SurfaceWhite }
+[cl_armor_waf] --> [cl_https_lb] { color: $GcpBlue, strokeWidth: 2, sourceAnchor: "right", targetAnchor: "left", curve: "step" }
+[cl_https_lb] --> [cl_iap_auth] { color: $GcpBlue, strokeWidth: 2, sourceAnchor: "right", targetAnchor: "left", curve: "step" }
+[cl_iap_auth] --> [cl_web_ui] { color: $GcpBlue, strokeWidth: 2, sourceAnchor: "right", targetAnchor: "left", curve: "step" }
+
+[Zone1_Ingress] --> [supervisor_agent] { color: "#7c3aed", strokeWidth: 2, sourceAnchor: "bottom", targetAnchor: "top", curve: "step", label: "Swarm Audit", sequenceBadge: "2", badgeFill: "#7c3aed", badgeFontColor: $SurfaceWhite }
+[supervisor_agent] --> [DataRetrievalAgents] { color: "#7c3aed", strokeWidth: 2, sourceAnchor: "right", targetAnchor: "left", curve: "step" }
+[supervisor_agent] --> [SynthesisAuditAgent] { color: "#7c3aed", strokeWidth: 2, sourceAnchor: "right", targetAnchor: "left", curve: "step" }
+[SpecialistAgentsCol] --> [M57Guardrails] { color: $GcpGreen, strokeWidth: 1.8, dashed: true, sourceAnchor: "right", targetAnchor: "left", curve: "step", label: "Enforced By" }
+
+[Zone3_GKE_Swarm] --> [StructuredFinanceStore] { color: $EmeraldTeal, strokeWidth: 2, sourceAnchor: "bottom", targetAnchor: "top", curve: "step", label: "M57 SQL & API", sequenceBadge: "3", badgeFill: $EmeraldTeal, badgeFontColor: $SurfaceWhite }
+[Zone3_GKE_Swarm] --> [UnstructuredVectorStore] { color: $GcpBlue, strokeWidth: 2, sourceAnchor: "bottom", targetAnchor: "top", curve: "step", label: "pgvector HNSW", sequenceBadge: "4", badgeFill: $GcpBlue, badgeFontColor: $SurfaceWhite }
+[Zone2_Governance] --> [VertexAndBackup] { color: $BusStroke, strokeWidth: 1.8, dashed: true, sourceAnchor: "bottom", targetAnchor: "top", curve: "step", label: "ADC & WORM" }
