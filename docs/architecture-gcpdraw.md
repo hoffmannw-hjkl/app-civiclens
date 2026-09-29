@@ -16,6 +16,12 @@ Ce document centralise les **schémas d'architecture as-code** de **CivicLens Pl
 
 ---
 
+## 🖼️ Aperçu Visuel (Dendrite v3.3 — Bento Matrix 16:9)
+
+[![CivicLens — Public Finance M57 Observatory & Google ADK 2.0 Multi-Agent Swarm](diagrams/civiclens_adk_swarm_v3.png)](diagrams/civiclens_adk_swarm_v3.png)
+
+---
+
 ## 1. Spécification Dendrite v3.3 (`docs/diagrams/civiclens_adk_swarm_v3.dendrite`)
 
 > **Sous-titre exécutif** : *Sovereign Smart City & Public Finance Platform with 4-Agent ADK 2.0 Swarm, BigQuery M57 Lakehouse & Cloud SQL pgvector HNSW*

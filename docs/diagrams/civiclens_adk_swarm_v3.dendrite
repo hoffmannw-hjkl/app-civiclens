@@ -20,11 +20,11 @@ Style @ArchitectureRoot {
 }
 Style @PerimeterZone {
   fill: "#e8f0fe", strokeColor: "#8ab4f8", strokeWidth: 1.5, borderRadius: 12,
-  padding: 16, gap: 16, fontColor: $DarkSlate, fontSize: 15, labelWeight: bold
+  padding: 20, gap: 18, fontColor: $DarkSlate, fontSize: 15, labelWeight: bold
 }
 Style @ExecutionZone {
   fill: "#f3e8fd", strokeColor: "#c084fc", strokeWidth: 1.5, borderRadius: 12,
-  padding: 16, gap: 16, fontColor: $DarkSlate, fontSize: 15, labelWeight: bold
+  padding: 20, gap: 18, fontColor: $DarkSlate, fontSize: 15, labelWeight: bold
 }
 Style @GovernanceZone {
   fill: "#e6f4ea", strokeColor: "#81c995", strokeWidth: 1.5, borderRadius: 12,
@@ -32,11 +32,11 @@ Style @GovernanceZone {
 }
 Style @ResourceZone {
   fill: "#fef7e0", strokeColor: "#fde293", strokeWidth: 1.5, borderRadius: 12,
-  padding: 16, gap: 16, fontColor: $DarkSlate, fontSize: 15, labelWeight: bold
+  padding: 20, gap: 18, fontColor: $DarkSlate, fontSize: 15, labelWeight: bold
 }
 Style @PurpleSubGroup {
   fill: "#e9d5ff", strokeColor: darken("#e9d5ff", 14), strokeWidth: 1, borderRadius: 10,
-  padding: 12, gap: 10, fontColor: $DarkSlate, fontSize: 13, labelWeight: bold
+  padding: 16, gap: 12, fontColor: $DarkSlate, fontSize: 13, labelWeight: bold
 }
 Style @GreenSubGroup {
   fill: "#ceead6", strokeColor: darken("#ceead6", 14), strokeWidth: 1, borderRadius: 10,
@@ -44,13 +44,13 @@ Style @GreenSubGroup {
 }
 Style @AmberSubGroup {
   fill: "#f9e4a7", strokeColor: darken("#f9e4a7", 14), strokeWidth: 1, borderRadius: 10,
-  padding: 12, gap: 12, fontColor: $DarkSlate, fontSize: 13, labelWeight: bold
+  padding: 16, gap: 12, fontColor: $DarkSlate, fontSize: 13, labelWeight: bold
 }
 Style @ActorCard {
   width: 182, height: 56,
   fill: $SurfaceWhite, strokeColor: $CardBorder, strokeWidth: 1, borderRadius: 8,
   fontColor: $DarkSlate, subFontColor: $SubText,
-  fontSize: 14, subFontSize: 11, labelWeight: bold,
+  fontSize: 12.5, subFontSize: 10, labelWeight: bold,
   textAlign: "left", textVAlign: "middle",
   iconPosition: "left", iconSize: 28, padding: 10, shadow: true
 }
@@ -58,7 +58,7 @@ Style @ProductCard {
   width: 170, height: 58,
   fill: $SurfaceWhite, strokeColor: $CardBorder, strokeWidth: 1, borderRadius: 8,
   fontColor: $DarkSlate, subFontColor: $SubText,
-  fontSize: 13.5, subFontSize: 10.5, labelWeight: bold,
+  fontSize: 12.5, subFontSize: 10, labelWeight: bold,
   textAlign: "left", textVAlign: "middle",
   iconPosition: "left", iconSize: 26, padding: 10, shadow: true
 }
@@ -117,14 +117,14 @@ Zone @CivicLens_Platform {
         title: "Parallel Quantitative & Legal Retrieval Subagents"
         style: @PurpleSubGroup, width: 376, layout: row, gap: 12, align: center, justify: center
         [budget_sql_agent: "2. BudgetSQLAgent" | "M57 BigQuery + OFGL"] { style: @ProductCard, width: 174, icon: "BigQuery" }
-        [delib_auditor_agent: "3. DeliberationAuditor" | "pgvector PDF + Bercy"] { style: @ProductCard, width: 174, icon: "Search" }
+        [delib_auditor_agent: "3. DelibAuditor" | "pgvector PDF + Bercy"] { style: @ProductCard, width: 174, icon: "Search" }
       }
 
       Zone @SynthesisAuditAgent {
         title: "Cross-Examination & Official Report Generation"
         style: @PurpleSubGroup, dashed: true, width: 376, layout: row, gap: 12, align: center, justify: center
         [crosscheck_agent: "4. CrossCheckAudit" | "Voted PDF vs. Executed SQL"] { style: @ProductCard, width: 174, icon: "ShieldCheck" }
-        [pdf_report_gen: "M57 PDF & Score /100" | "ReportLab + FinOps Badge"] { style: @ProductCard, width: 174, icon: "BarChart3" }
+        [pdf_report_gen: "M57 PDF Report" | "ReportLab + FinOps Badge"] { style: @ProductCard, width: 174, icon: "BarChart3" }
       }
     }
   }
@@ -155,7 +155,7 @@ Zone @CivicLens_Platform {
       title: "Structured M57 Accounting Lakehouse"
       style: @AmberSubGroup, layout: row, gap: 12, align: center, justify: center
       [bq_m57_lakehouse: "BigQuery Lakehouse" | "civiclens_finances (M57)"] { style: @ProductCard, width: 176, icon: "BigQuery" }
-      [bercy_ofgl_api: "DGFiP / OFGL & Bercy" | "650+ Open Data Datasets"] { style: @ProductCard, width: 178, icon: "Globe" }
+      [bercy_ofgl_api: "DGFiP & Bercy API" | "650+ Open Data Datasets"] { style: @ProductCard, width: 178, icon: "Globe" }
     }
 
     Zone @UnstructuredVectorStore {

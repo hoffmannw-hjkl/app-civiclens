@@ -13,6 +13,8 @@ Every stage specifies:
 
 ---
 
+[![CivicLens — Public Finance M57 Observatory & Google ADK 2.0 Multi-Agent Swarm](diagrams/civiclens_adk_swarm_v3.png)](diagrams/civiclens_adk_swarm_v3.png)
+
 ## ⏱️ Demo Flow Overview (Duration: 12–15 min)
 
 ```mermaid
