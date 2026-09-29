@@ -947,27 +947,40 @@
 
   <!-- Modal Architecture GCP Live (X-Ray) -->
   <div id="gcpXrayModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm hidden">
-    <div class="bg-white rounded-3xl max-w-4xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 space-y-6 max-h-[90vh] overflow-y-auto">
-      <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
+    <div class="bg-white rounded-3xl max-w-6xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 space-y-5 max-h-[92vh] overflow-y-auto">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
         <div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
             <span class="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-200">
               Google Cloud Well-Architected • Live X-Ray
             </span>
             <span class="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
               Région : europe-west1 (Belgique)
             </span>
+            <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+              Dendrite v3.3 Bento 16:9
+            </span>
           </div>
-          <h3 class="text-lg sm:text-xl font-extrabold text-slate-900 mt-1.5">🏗️ Architecture GCP Sous le Capot & Deep-Links Console</h3>
-          <p class="text-xs text-slate-500 mt-0.5">Visualisez le cheminement temps réel de chaque requête citoyenne à travers les briques managées Google Cloud.</p>
+          <h3 class="text-lg sm:text-xl font-extrabold text-slate-900 mt-1.5">🏗️ Architecture GCP Sous le Capot & Schéma Interactif Dendrite v3.3</h3>
+          <p class="text-xs text-slate-500 mt-0.5">Visualisez les 6 briques managées avec Deep-Links Console GCP ou explorez le schéma d'architecture interactif Dendrite v3.3 (Bento Matrix).</p>
         </div>
-        <button onclick="closeGcpXrayModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition cursor-pointer">
-          ✕
-        </button>
+        <div class="flex items-center gap-2 shrink-0">
+          <div class="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200">
+            <button id="btnXrayTabCards" onclick="switchXrayTab('cards')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-slate-900 shadow-xs transition cursor-pointer">
+              🔗 Briques & Deep-Links GCP
+            </button>
+            <button id="btnXrayTabDendrite" onclick="switchXrayTab('dendrite')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition cursor-pointer">
+              🗺️ Schéma Interactif Dendrite v3.3
+            </button>
+          </div>
+          <button onclick="closeGcpXrayModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition cursor-pointer">
+            ✕
+          </button>
+        </div>
       </div>
 
-      <!-- Flux temps réel en 6 briques -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <!-- Vue 1 : Flux temps réel en 6 briques -->
+      <div id="xrayCardsView" class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
           <div class="flex items-center justify-between">
             <span class="text-xs font-bold text-slate-900">1. Cloud Armor WAF & IAP</span>
@@ -1035,14 +1048,24 @@
         </div>
       </div>
 
+      <!-- Vue 2 : Schéma Interactif Dendrite v3.3 (Bento Matrix 16:9) -->
+      <div id="xrayDendriteView" class="hidden space-y-2">
+        <iframe id="xrayDendriteIframe" data-src="/static/dendrite-architecture.html" title="Schéma d'Architecture Dendrite v3.3 CivicLens" class="w-full h-[64vh] rounded-2xl border border-slate-200 bg-slate-50 shadow-inner"></iframe>
+      </div>
+
       <div class="bg-slate-900 text-slate-200 rounded-2xl p-4 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <span class="font-bold text-white">💡 Message Clé Client (Valeur GCP) :</span>
           Zéro serveur à administrer, sécurité Zero-Trust native (IAP + Workload Identity) et gouvernance comptable M57 garantie par architecture.
         </div>
-        <button onclick="closeGcpXrayModal(); switchMainTab('swarm');" class="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold shrink-0 transition cursor-pointer">
-          Tester le Swarm ADK 2.0 ➔
-        </button>
+        <div class="flex items-center gap-2 shrink-0">
+          <button onclick="switchXrayTab('dendrite')" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-300 font-bold transition cursor-pointer border border-slate-700">
+            🗺️ Voir Schéma Dendrite v3.3
+          </button>
+          <button onclick="closeGcpXrayModal(); switchMainTab('swarm');" class="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold transition cursor-pointer">
+            Tester le Swarm ADK 2.0 ➔
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -2162,6 +2185,29 @@
     function closeGcpXrayModal() {
       const m = document.getElementById('gcpXrayModal');
       if (m) m.classList.add('hidden');
+    }
+
+    function switchXrayTab(tab) {
+      const cardsView = document.getElementById('xrayCardsView');
+      const dendriteView = document.getElementById('xrayDendriteView');
+      const btnCards = document.getElementById('btnXrayTabCards');
+      const btnDendrite = document.getElementById('btnXrayTabDendrite');
+      const iframe = document.getElementById('xrayDendriteIframe');
+
+      if (tab === 'dendrite') {
+        if (cardsView) cardsView.classList.add('hidden');
+        if (dendriteView) dendriteView.classList.remove('hidden');
+        if (btnDendrite) btnDendrite.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-indigo-700 shadow-xs transition cursor-pointer';
+        if (btnCards) btnCards.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition cursor-pointer';
+        if (iframe && !iframe.getAttribute('src')) {
+          iframe.setAttribute('src', iframe.getAttribute('data-src'));
+        }
+      } else {
+        if (dendriteView) dendriteView.classList.add('hidden');
+        if (cardsView) cardsView.classList.remove('hidden');
+        if (btnCards) btnCards.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-slate-900 shadow-xs transition cursor-pointer';
+        if (btnDendrite) btnDendrite.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition cursor-pointer';
+      }
     }
 
     // --- Orchestration Multi-Agents Google ADK 2.0 (Swarm Audit) ---
